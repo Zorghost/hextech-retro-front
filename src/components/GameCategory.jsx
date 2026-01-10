@@ -3,6 +3,12 @@ import Image from "next/image"
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 
 export default function GameCategory({category}) {
+  if (!category) {
+    return null;
+  }
+
+  const games = Array.isArray(category.games) ? category.games : [];
+
   return (
     <section className="mb-4">
       
@@ -13,8 +19,11 @@ export default function GameCategory({category}) {
         </a>
       </div>
 
+      {games.length === 0 ? (
+        <p className="text-sm text-accent">No games yet.</p>
+      ) : (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {category.games.map((game) => (
+        {games.map((game) => (
           <a href={`/game/${game.slug}`} key={game.id} className="group">
             <div className="overflow-hidden rounded-lg border border-accent-secondary mb-2">
               <Image 
@@ -31,6 +40,7 @@ export default function GameCategory({category}) {
           </a>
         ))}
       </div>
+      )}
 
     </section>
   )

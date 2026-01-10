@@ -19,7 +19,7 @@ export default async function Home() {
     <>
       <HeroSlider />
       <CategorySlider categories={allCategoreis} />
-      <GameCategory category={category} />
+      {category ? <GameCategory category={category} /> : null}
 
       {/* <GameCategory category={multipleCategories[1]} /> */}
       {/* <pre>{JSON.stringify(multipleCategories, null, 2)}</pre> */}
