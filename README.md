@@ -89,7 +89,7 @@ In App Platform:
 
 Database note:
 
-- The container entrypoint runs `npx prisma migrate deploy` on startup (set `SKIP_PRISMA_MIGRATE=true` to disable).
+- The container entrypoint runs `prisma migrate deploy` on startup using `prisma/schema.prisma` (set `SKIP_PRISMA_MIGRATE=true` to disable).
 - To load demo data automatically on startup (usually only for staging), set `RUN_PRISMA_SEED=true`.
 
 
