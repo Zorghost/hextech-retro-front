@@ -1,14 +1,19 @@
 # syntax=docker/dockerfile:1
 
-FROM node:20-bookworm-slim AS deps
+FROM node:20-bullseye-slim AS deps
 WORKDIR /app
 
 # Install deps first for better layer caching
 COPY package.json package-lock.json ./
 RUN npm ci
 
-FROM node:20-bookworm-slim AS builder
+FROM node:20-bullseye-slim AS builder
 WORKDIR /app
+
+# Prisma engines require OpenSSL at build-time (Next.js prerender runs server code).
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends openssl ca-certificates \
+	&& rm -rf /var/lib/apt/lists/*
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -20,8 +25,13 @@ ENV DATABASE_URL="file:./dev.db"
 # Next.js build (also runs prisma generate via package.json script)
 RUN npm run build
 
-FROM node:20-bookworm-slim AS runner
+FROM node:20-bullseye-slim AS runner
 WORKDIR /app
+
+# Prisma engines require OpenSSL at runtime too.
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends openssl ca-certificates \
+	&& rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
 ENV PORT=3000
