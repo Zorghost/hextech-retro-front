@@ -1,13 +1,11 @@
-import { auth } from "@/app/auth"
+import { NextResponse } from "next/server";
 
+// Auth for /dashboard is enforced in the server layout at src/app/(admin)/dashboard/layout.jsx.
+// Keep this middleware as a no-op so the app doesn't pull Node-only deps into the Edge runtime.
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
-  matcher: ["/dashboard/:path*"]
-}
+  matcher: ["/__middleware_disabled__"],
+};
 
-export default auth((req) => {
-  if (!req.auth && req.nextUrl.pathname !== "/login") {
-    const newUrl = new URL("/login", req.nextUrl.origin)
-    return Response.redirect(newUrl)
-  } 
-})
+export function middleware() {
+  return NextResponse.next();
+}

@@ -1,5 +1,6 @@
 import { ChevronRightIcon } from "@heroicons/react/24/outline"
 import Image from "next/image"
+import { getGameThumbnailUrl } from "@/lib/assetUrls";
 
 export default function GameCategory({category}) {
   return (
@@ -17,7 +18,7 @@ export default function GameCategory({category}) {
           <a href={`/game/${game.slug}`} key={game.id} className="group">
             <div className="overflow-hidden rounded-lg border border-accent-secondary mb-2">
               <Image 
-              src={`/game/${game.image}`}
+                src={getGameThumbnailUrl(game.image)}
               width={300}
               height={300}
               alt={game.title}

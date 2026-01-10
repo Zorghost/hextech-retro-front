@@ -1,10 +1,11 @@
 'use client'
 import React, { useEffect } from "react"
+import { getRomUrl } from "@/lib/assetUrls";
 
 export default function GameEmulator({game}) {
   useEffect(() => {
     window.EJS_player = "#game";
-    window.EJS_gameUrl = `/${game.game_url}`
+    window.EJS_gameUrl = getRomUrl(game.game_url)
     window.EJS_core = `${game.categories[0]?.core}`
     window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
 

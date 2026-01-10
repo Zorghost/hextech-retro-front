@@ -5,6 +5,10 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
+function getEnv(name, fallbackName) {
+  return process.env[name] ?? (fallbackName ? process.env[fallbackName] : undefined);
+}
+
 export async function createGame(prevState, formData) {
   try {
     // Grab ID to update
@@ -106,7 +110,7 @@ async function uploadGame(gameFile) {
   if (gameFile && gameFile instanceof File && gameFile.name && gameFile.size > 0) {
     try {
       const buffer = Buffer.from(await gameFile.arrayBuffer());
-      await uploadFileToS3(buffer, `rom/${gameFile.name}`)
+      await uploadFileToS3(buffer, `rom/${gameFile.name}`, gameFile.type)
     } catch (error) {
       console.log("Error uploading game:", error);
     }
@@ -117,26 +121,36 @@ async function uploadThumbnail(thumbnailFile) {
   if (thumbnailFile && thumbnailFile instanceof File && thumbnailFile.name && thumbnailFile.size > 0) {
     try {
       const buffer = Buffer.from(await thumbnailFile.arrayBuffer());
-      await uploadFileToS3(buffer, `thumbnail/${thumbnailFile.name}`)
+      await uploadFileToS3(buffer, `thumbnail/${thumbnailFile.name}`, thumbnailFile.type)
     } catch (error) {
       console.log("Error uploading thumbnail:", error);
     }
   }
 }
 
+const s3Region = getEnv("NEXT_S3_REGION", "NEXT_AWS_S3_REGION");
+const s3Bucket = getEnv("NEXT_S3_BUCKET_NAME", "NEXT_AWS_S3_BUCKET_NAME");
+const s3Endpoint = getEnv("NEXT_S3_ENDPOINT", "NEXT_AWS_S3_ENDPOINT");
+const s3ForcePathStyle = (getEnv("NEXT_S3_FORCE_PATH_STYLE") ?? "false").toLowerCase() === "true";
+const s3PublicRead = (getEnv("NEXT_S3_PUBLIC_READ") ?? "false").toLowerCase() === "true";
+
 const s3Client = new S3Client({
-  region: process.env.NEXT_AWS_S3_REGION,
+  region: s3Region,
+  endpoint: s3Endpoint,
+  forcePathStyle: s3ForcePathStyle,
   credentials: {
-    accessKeyId: process.env.NEXT_AWS_S3_KEY_ID,
-    secretAccessKey: process.env.NEXT_AWS_S3_SECRET_ACCESS_KEY
-  }
+    accessKeyId: getEnv("NEXT_S3_KEY_ID", "NEXT_AWS_S3_KEY_ID"),
+    secretAccessKey: getEnv("NEXT_S3_SECRET_ACCESS_KEY", "NEXT_AWS_S3_SECRET_ACCESS_KEY"),
+  },
 })
 
-async function uploadFileToS3(file, filename) {
+async function uploadFileToS3(file, filename, contentType) {
   const params = {
-    Bucket: process.env.NEXT_AWS_S3_BUCKET_NAME,
+    Bucket: s3Bucket,
     Key: `${filename}`,
-    Body: file
+    Body: file,
+    ContentType: contentType || undefined,
+    ACL: s3PublicRead ? "public-read" : undefined,
   }
 
   const command = new PutObjectCommand(params);

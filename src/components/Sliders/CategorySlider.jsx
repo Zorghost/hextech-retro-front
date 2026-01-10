@@ -6,6 +6,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
+import { getCategoryImageUrl } from "@/lib/assetUrls";
 
 export default function CategorySlider({ categories }) {
   const breakpoints = {
@@ -56,7 +57,7 @@ export default function CategorySlider({ categories }) {
             <a href={`/category/${item.slug}`} className="group">
               <div className="overflow-hidden rounded-lg border-accent-secondary border mb-2">
                 <Image
-                  src={`/category/${item.image}`}
+                  src={getCategoryImageUrl(item.image)}
                   width={300}
                   height={300}
                   alt={item.title}
