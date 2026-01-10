@@ -87,6 +87,11 @@ In App Platform:
 - Choose **Deploy from repository** → **Dockerfile**.
 - Configure runtime env vars in App Platform (Database URL, NextAuth secret, and Spaces creds/URLs).
 
+Database note:
+
+- The container entrypoint runs `npx prisma migrate deploy` on startup (set `SKIP_PRISMA_MIGRATE=true` to disable).
+- To load demo data automatically on startup (usually only for staging), set `RUN_PRISMA_SEED=true`.
+
 
 ## 3S Bucket Policy
 

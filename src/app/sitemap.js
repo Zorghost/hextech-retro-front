@@ -1,6 +1,6 @@
 import { getAllGames } from "@/lib/gameQueries";
 
-export const revalidate = 3600 // one hour
+export const dynamic = "force-dynamic";
 
 export default async function sitemap() {
   const games = await getAllGames();
