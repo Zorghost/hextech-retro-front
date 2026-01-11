@@ -14,6 +14,12 @@ export function getRomUrl(filename) {
   return `/${encodeURIComponent(filename)}`;
 }
 
+// Same as getRomUrl, but allows passing a base URL at runtime (e.g. from a Server Component).
+export function getRomUrlWithBase(filename, base) {
+  if (base) return joinUrl(base, encodeURIComponent(filename));
+  return `/${encodeURIComponent(filename)}`;
+}
+
 export function getGameThumbnailUrl(filename) {
   const base = process.env.NEXT_PUBLIC_GAME_THUMBNAIL_BASE_URL;
   if (base) return joinUrl(base, encodeURIComponent(filename));

@@ -2,6 +2,7 @@ import { getGameBySlug } from "@/lib/gameQueries";
 import GameEmulator from "@/components/GameEmulator";
 import Disqus from "@/components/Disqus";
 import { Suspense } from "react";
+import { getRomUrlWithBase } from "@/lib/assetUrls";
 
 export async function generateMetadata({ params }) {
   const game = await getGameBySlug(params.slug);
@@ -16,6 +17,10 @@ export async function generateMetadata({ params }) {
 
 export default async function Page({ params }) {
   const game = await getGameBySlug(params.slug);
+
+  const romBaseUrl = process.env.NEXT_PUBLIC_ROM_BASE_URL;
+  const romUrl = game?.game_url ? getRomUrlWithBase(game.game_url, romBaseUrl) : null;
+
   return (
     <div>
       <nav className="rounded-md w-full mb-4">
@@ -38,7 +43,7 @@ export default async function Page({ params }) {
         </ol>
       </nav>
 
-      <GameEmulator game={game} />
+      <GameEmulator game={game} romUrl={romUrl} />
 
       <div className="mt-8">
         <Suspense fallback={<p>Loading game...</p>}>

@@ -1,11 +1,10 @@
 'use client'
 import React, { useEffect } from "react"
-import { getRomUrl } from "@/lib/assetUrls";
 
-export default function GameEmulator({game}) {
+export default function GameEmulator({ game, romUrl }) {
   useEffect(() => {
     window.EJS_player = "#game";
-    window.EJS_gameUrl = getRomUrl(game.game_url)
+    window.EJS_gameUrl = romUrl || game?.game_url;
     window.EJS_core = `${game.categories[0]?.core}`
     window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
 
@@ -13,7 +12,7 @@ export default function GameEmulator({game}) {
     script.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
     script.async = true;
     document.body.appendChild(script);
-  }, []);
+  }, [game, romUrl]);
   return(
     <div className="bg-main flex justify-center rounded-xl">
       <div style={{ width: "640px", height: "480px", maxWidth: "100%" }}>
