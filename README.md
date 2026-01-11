@@ -34,6 +34,11 @@ NEXT_S3_PUBLIC_READ=false
 NEXT_PUBLIC_ROM_BASE_URL=https://<space>.<region>.cdn.digitaloceanspaces.com/rom
 NEXT_PUBLIC_GAME_THUMBNAIL_BASE_URL=https://<space>.<region>.cdn.digitaloceanspaces.com/thumbnail
 NEXT_PUBLIC_CATEGORY_IMAGE_BASE_URL=https://<space>.<region>.cdn.digitaloceanspaces.com/category
+
+# If your bucket/objects are private (you see 403 from the URLs above), you can proxy
+# images through the Next.js app using your server-side Spaces credentials.
+# This avoids Next Image Optimization failing with "upstream response is invalid".
+NEXT_PUBLIC_IMAGE_SOURCE=proxy
 ```
 
 Notes:

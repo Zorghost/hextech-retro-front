@@ -21,12 +21,16 @@ export function getRomUrlWithBase(filename, base) {
 }
 
 export function getGameThumbnailUrl(filename) {
+  const imageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase();
+  if (imageSource === "proxy") return `/api/assets/thumbnail/${encodeURIComponent(filename)}`;
   const base = process.env.NEXT_PUBLIC_GAME_THUMBNAIL_BASE_URL;
   if (base) return joinUrl(base, encodeURIComponent(filename));
   return `/game/${encodeURIComponent(filename)}`;
 }
 
 export function getCategoryImageUrl(filename) {
+  const imageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase();
+  if (imageSource === "proxy") return `/api/assets/category/${encodeURIComponent(filename)}`;
   const base = process.env.NEXT_PUBLIC_CATEGORY_IMAGE_BASE_URL;
   if (base) return joinUrl(base, encodeURIComponent(filename));
   return `/category/${encodeURIComponent(filename)}`;
