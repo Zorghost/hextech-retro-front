@@ -13,7 +13,7 @@ The website can be used locally or you could move all of your assets into an S3 
 
 Setup your enviroment veraibles:
 ```
-DATABASE_URL=file:./dev.db
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DB?sslmode=require
 NEXT_WEBSITE_URL=http://localhost:3000
 AUTH_SECRET=YourSecretPhrase
 
@@ -89,6 +89,7 @@ In App Platform:
 
 Database note:
 
+- This project is configured for PostgreSQL in production. Create a DigitalOcean PostgreSQL database component and set `DATABASE_URL` to its connection string.
 - The container entrypoint runs `prisma migrate deploy` on startup using `prisma/schema.prisma` (set `SKIP_PRISMA_MIGRATE=true` to disable).
 - To load demo data automatically on startup (usually only for staging), set `RUN_PRISMA_SEED=true`.
 
