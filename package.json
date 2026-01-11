@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:seed": "prisma db seed",
+    "db:resync": "node prisma/resyncSequences.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

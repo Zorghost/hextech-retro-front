@@ -71,6 +71,18 @@ To seed the demo data into the database apply:
 ```bash
 npx prisma db seed
 ```
+
+If you seeded data with explicit `id` values (like this repo’s demo seed), Postgres sequences can fall behind. If you see an error like:
+
+- `Invalid prisma.game.create() invocation: Unique constraint failed on the fields: (id)`
+
+Run:
+
+```bash
+npm run db:resync
+```
+
+(In DigitalOcean App Platform you can run this as a one-off command against the same `DATABASE_URL`.)
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 ## Deploying to DigitalOcean App Platform (Container)
