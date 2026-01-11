@@ -9,6 +9,14 @@ function getEnv(name, fallbackName) {
   return process.env[name] ?? (fallbackName ? process.env[fallbackName] : undefined);
 }
 
+function isNonEmptyString(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isValidUploadFile(value) {
+  return value && value instanceof File && value.name && value.size > 0;
+}
+
 export async function createGame(prevState, formData) {
   try {
     // Grab ID to update
@@ -31,26 +39,24 @@ export async function createGame(prevState, formData) {
       published
     };
 
-    if (thumbnailFile && thumbnailFile instanceof File && thumbnailFile.name && thumbnailFile.size > 0) {
-      console.log("Setting image to:" , thumbnailFile.name);
-      gameData.image = thumbnailFile.name
-    }
-
-    if (gameFile && gameFile instanceof File && gameFile.name && gameFile.size > 0) {
-      console.log("Setting file to:" , gameFile.name);
-      gameData.game_url = gameFile.name
-    }
-
 
     if (id) {
+      // Upload first so DB doesn't point at missing objects.
+      if (isValidUploadFile(thumbnailFile)) {
+        await uploadThumbnail(thumbnailFile);
+        gameData.image = thumbnailFile.name;
+      }
+
+      if (isValidUploadFile(gameFile)) {
+        await uploadGame(gameFile);
+        gameData.game_url = gameFile.name;
+      }
+
       // update the game
       await prisma.game.update({
         where: { id: parseInt(id, 10) },
         data: gameData
       });
-
-      await uploadThumbnail(thumbnailFile);
-      await uploadGame(gameFile);
       revalidatePath("/");
 
       return {
@@ -77,10 +83,32 @@ export async function createGame(prevState, formData) {
         };
       }
 
-      // Create new game
-      await prisma.game.create({ data: gameData });
+      // New games require both fields (Prisma schema has image + game_url as required).
+      if (!isValidUploadFile(thumbnailFile)) {
+        return {
+          status: "error",
+          message: "Thumbnail is required.",
+          color: "red",
+        };
+      }
+
+      if (!isValidUploadFile(gameFile)) {
+        return {
+          status: "error",
+          message: "Game file is required.",
+          color: "red",
+        };
+      }
+
+      // Upload first so DB doesn't point at missing objects.
       await uploadThumbnail(thumbnailFile);
       await uploadGame(gameFile);
+
+      gameData.image = thumbnailFile.name;
+      gameData.game_url = gameFile.name;
+
+      // Create new game
+      await prisma.game.create({ data: gameData });
 
       revalidatePath("/");
       return {
@@ -107,25 +135,15 @@ export async function createGame(prevState, formData) {
 
 
 async function uploadGame(gameFile) {
-  if (gameFile && gameFile instanceof File && gameFile.name && gameFile.size > 0) {
-    try {
-      const buffer = Buffer.from(await gameFile.arrayBuffer());
-      await uploadFileToS3(buffer, `rom/${gameFile.name}`, gameFile.type)
-    } catch (error) {
-      console.log("Error uploading game:", error);
-    }
-  }
+  if (!isValidUploadFile(gameFile)) return;
+  const buffer = Buffer.from(await gameFile.arrayBuffer());
+  await uploadFileToS3(buffer, `rom/${gameFile.name}`, gameFile.type)
 }
 
 async function uploadThumbnail(thumbnailFile) {
-  if (thumbnailFile && thumbnailFile instanceof File && thumbnailFile.name && thumbnailFile.size > 0) {
-    try {
-      const buffer = Buffer.from(await thumbnailFile.arrayBuffer());
-      await uploadFileToS3(buffer, `thumbnail/${thumbnailFile.name}`, thumbnailFile.type)
-    } catch (error) {
-      console.log("Error uploading thumbnail:", error);
-    }
-  }
+  if (!isValidUploadFile(thumbnailFile)) return;
+  const buffer = Buffer.from(await thumbnailFile.arrayBuffer());
+  await uploadFileToS3(buffer, `thumbnail/${thumbnailFile.name}`, thumbnailFile.type)
 }
 
 const s3Region = getEnv("NEXT_S3_REGION", "NEXT_AWS_S3_REGION");
@@ -133,6 +151,23 @@ const s3Bucket = getEnv("NEXT_S3_BUCKET_NAME", "NEXT_AWS_S3_BUCKET_NAME");
 const s3Endpoint = getEnv("NEXT_S3_ENDPOINT", "NEXT_AWS_S3_ENDPOINT");
 const s3ForcePathStyle = (getEnv("NEXT_S3_FORCE_PATH_STYLE") ?? "false").toLowerCase() === "true";
 const s3PublicRead = (getEnv("NEXT_S3_PUBLIC_READ") ?? "false").toLowerCase() === "true";
+
+function assertS3Configured() {
+  const missing = [];
+
+  if (!isNonEmptyString(s3Bucket)) missing.push("NEXT_S3_BUCKET_NAME");
+  if (!isNonEmptyString(s3Region)) missing.push("NEXT_S3_REGION");
+  if (!isNonEmptyString(s3Endpoint)) missing.push("NEXT_S3_ENDPOINT");
+
+  const accessKeyId = getEnv("NEXT_S3_KEY_ID", "NEXT_AWS_S3_KEY_ID");
+  const secretAccessKey = getEnv("NEXT_S3_SECRET_ACCESS_KEY", "NEXT_AWS_S3_SECRET_ACCESS_KEY");
+  if (!isNonEmptyString(accessKeyId)) missing.push("NEXT_S3_KEY_ID");
+  if (!isNonEmptyString(secretAccessKey)) missing.push("NEXT_S3_SECRET_ACCESS_KEY");
+
+  if (missing.length > 0) {
+    throw new Error(`S3 upload is not configured. Missing: ${missing.join(", ")}`);
+  }
+}
 
 const s3Client = new S3Client({
   region: s3Region,
@@ -145,6 +180,18 @@ const s3Client = new S3Client({
 })
 
 async function uploadFileToS3(file, filename, contentType) {
+  assertS3Configured();
+
+  // Safe debug info (no secrets)
+  console.log("Uploading to S3", {
+    bucket: s3Bucket,
+    endpoint: s3Endpoint,
+    region: s3Region,
+    key: filename,
+    forcePathStyle: s3ForcePathStyle,
+    publicRead: s3PublicRead,
+  });
+
   const params = {
     Bucket: s3Bucket,
     Key: `${filename}`,
@@ -154,13 +201,9 @@ async function uploadFileToS3(file, filename, contentType) {
   }
 
   const command = new PutObjectCommand(params);
-  try {
-    const response = await s3Client.send(command);
-    console.log("File uploaded successfully:", response);
-    return filename
-  } catch (error) {
-    throw error;
-  }
+  const response = await s3Client.send(command);
+  console.log("File uploaded successfully", { key: filename, eTag: response?.ETag });
+  return filename
 }
 
 export async function deleteFormAction(formData) {
