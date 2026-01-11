@@ -244,6 +244,31 @@ async function main() {
       role: "admin"
     }
   })
+
+  // Re-sync SERIAL sequences in case we inserted explicit IDs above.
+  // Without this, Postgres may reuse an existing ID and fail with:
+  // "Unique constraint failed on the fields: (`id`)".
+  await prisma.$executeRaw`
+    SELECT setval(
+      pg_get_serial_sequence('"Game"', 'id'),
+      COALESCE((SELECT MAX(id) FROM "Game"), 0) + 1,
+      false
+    );
+  `;
+  await prisma.$executeRaw`
+    SELECT setval(
+      pg_get_serial_sequence('"Category"', 'id'),
+      COALESCE((SELECT MAX(id) FROM "Category"), 0) + 1,
+      false
+    );
+  `;
+  await prisma.$executeRaw`
+    SELECT setval(
+      pg_get_serial_sequence('"User"', 'id'),
+      COALESCE((SELECT MAX(id) FROM "User"), 0) + 1,
+      false
+    );
+  `;
 }
 
 main()
