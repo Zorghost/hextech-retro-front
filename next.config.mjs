@@ -11,9 +11,6 @@ function tryHostname(value) {
 
 const remoteHostnames = new Set([
   "d1geqzmavzu3y.cloudfront.net",
-  // DigitalOcean Spaces (origin) and Spaces CDN
-  "**.digitaloceanspaces.com",
-  "**.cdn.digitaloceanspaces.com",
 ]);
 
 for (const envName of [

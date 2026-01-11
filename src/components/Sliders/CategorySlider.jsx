@@ -8,6 +8,8 @@ import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import { getCategoryImageUrl } from "@/lib/assetUrls";
 
+const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
+
 export default function CategorySlider({ categories }) {
   const breakpoints = {
     320: {
@@ -61,6 +63,7 @@ export default function CategorySlider({ categories }) {
                   width={300}
                   height={300}
                   alt={item.title}
+                  unoptimized={isProxyImageSource}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
               </div>
