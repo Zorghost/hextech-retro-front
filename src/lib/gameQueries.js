@@ -60,9 +60,12 @@ export async function getGameBySlug(slug) {
 }
 
 export async function getCategoryBySlug(slug) {
-  return await prisma.category.findUnique({
+  return await prisma.category.findFirst({
     where: {
       slug,
+    },
+    orderBy: {
+      id: "asc",
     },
     select: {
       title: true,
