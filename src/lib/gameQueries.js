@@ -5,6 +5,18 @@ export async function getAllGames() {
   return await prisma.game.findMany({});
 }
 
+export async function getPublishedGamesForSitemap() {
+  return await prisma.game.findMany({
+    where: {
+      published: true,
+    },
+    select: {
+      slug: true,
+      created_at: true,
+    },
+  });
+}
+
 export async function getGamesByCategory(categorySlug, page = 1) {
   const ITEMS_PER_PAGE = 20;
   const skip = (page - 1) * ITEMS_PER_PAGE;
@@ -43,6 +55,20 @@ export async function getGameBySlug(slug) {
     },
     include: {
       categories: true,
+    },
+  });
+}
+
+export async function getCategoryBySlug(slug) {
+  return await prisma.category.findUnique({
+    where: {
+      slug,
+    },
+    select: {
+      title: true,
+      slug: true,
+      image: true,
+      core: true,
     },
   });
 }

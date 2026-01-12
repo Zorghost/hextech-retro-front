@@ -1,5 +1,6 @@
 import { Inter, Dela_Gothic_One } from "next/font/google";
 import "./globals.css";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 const InterBodyFont = Inter({
   subsets: ["latin"],
@@ -13,8 +14,36 @@ const DeltaHeadingFont = Dela_Gothic_One({
 });
 
 export const metadata = {
-  title: "The Next Game Platform",
+  metadataBase: new URL(getSiteUrl()),
+  title: {
+    default: "The Next Game Platform",
+    template: "%s | The Next Game Platform",
+  },
   description: "Retro gaming platform.",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "The Next Game Platform",
+    title: "The Next Game Platform",
+    description: "Retro gaming platform.",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "The Next Game Platform",
+    description: "Retro gaming platform.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
 };
 
 export default function RootLayout({ children }) {

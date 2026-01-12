@@ -1,7 +1,37 @@
-import { getGamesByCategory } from '@/lib/gameQueries'
+import { getCategoryBySlug, getGamesByCategory } from "@/lib/gameQueries";
+import { getSiteUrl } from "@/lib/siteUrl";
+
+export async function generateMetadata({ params, searchParams }) {
+  const siteUrl = getSiteUrl();
+  const page = parseInt(searchParams?.page, 10) || 1;
+  const category = await getCategoryBySlug(params.slug);
+
+  const titleBase = category?.title || params.slug;
+  const title = page > 1 ? `${titleBase} (Page ${page})` : titleBase;
+  const description = category?.core || `Browse ${titleBase} retro games.`;
+
+  const canonical =
+    page > 1
+      ? `${siteUrl}/category/${params.slug}?page=${page}`
+      : `${siteUrl}/category/${params.slug}`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      type: "website",
+      url: canonical,
+      title,
+      description,
+    },
+  };
+}
 
 export default async function Page({ params, searchParams }) {
-  const page = await parseInt(searchParams.page) || 1;
+  const page = parseInt(searchParams?.page, 10) || 1;
   const { games, totalPages, currentPage } = await getGamesByCategory(params.slug, page);
 
   return(
