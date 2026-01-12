@@ -1,5 +1,6 @@
 import { getCategoryBySlug, getGamesByCategory } from "@/lib/gameQueries";
 import { getSiteUrl } from "@/lib/siteUrl";
+import { getGameThumbnailUrl } from "@/lib/assetUrls";
 
 export async function generateMetadata({ params, searchParams }) {
   const siteUrl = getSiteUrl();
@@ -57,7 +58,7 @@ export default async function Page({ params, searchParams }) {
             <a href={`/game/${game.slug}`} key={game.id} className='group'>
               <div className='overflow-hidden rounded-lg border-accent-secondary border mb-2'>
                 <img 
-                  src={`/game/${game.image}`}
+                  src={getGameThumbnailUrl(game.image)}
                   width={300}
                   height={300}
                   alt={game.title}

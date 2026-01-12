@@ -1,6 +1,7 @@
 import Header from "@/components/Admin/Header"
 import { getAllGames, getGameCategories } from "@/lib/adminQueries"
 import Image from "next/image";
+import { getGameThumbnailUrl } from "@/lib/assetUrls";
 
 export const revalidate = 0;
 
@@ -44,12 +45,13 @@ export default async function Page() {
               <a href={`/dashboard/game/${game.id}`} key={game.id} className="flex gap-4 hover:bg-accent-secondary rounded-md">
                 <div className="w-16 h-16 bg-slate-100 overflow-hidden rounded-md">
                   <Image
-                    src={`/game/${game.image}`}
+                    src={getGameThumbnailUrl(game.image)}
                     className="object-cover w-full h-full"
                     alt={game.title}
                     width={128}
                     height={128}
                     quality={90}
+                    unoptimized
                   />
                 </div>
                 <div className="flex flex-col gap-1 justify-center">

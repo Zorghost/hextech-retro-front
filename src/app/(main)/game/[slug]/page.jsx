@@ -2,7 +2,7 @@ import { getGameBySlug } from "@/lib/gameQueries";
 import GameEmulator from "@/components/GameEmulator";
 import Disqus from "@/components/Disqus";
 import { Suspense } from "react";
-import { getRomUrlWithBase } from "@/lib/assetUrls";
+import { getGameThumbnailUrl, getRomUrlWithBase } from "@/lib/assetUrls";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { notFound } from "next/navigation";
 import Script from "next/script";
@@ -27,7 +27,12 @@ export async function generateMetadata({ params }) {
   const description = game.description || "Discover the best free Retro Games";
 
   const canonical = `${siteUrl}/game/${game.slug}`;
-  const imageUrl = game.image ? `${siteUrl}/game/${game.image}` : undefined;
+  const rawImageUrl = game.image ? getGameThumbnailUrl(game.image) : undefined;
+  const imageUrl = rawImageUrl
+    ? rawImageUrl.startsWith("http")
+      ? rawImageUrl
+      : `${siteUrl}${rawImageUrl}`
+    : undefined;
 
   return {
     title,

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { getSearchResults } from "@/lib/gameQueries";
+import { getGameThumbnailUrl } from "@/lib/assetUrls";
 
 export default async function Page(req) {
   const searchQuery = req.searchParams.q;
@@ -28,12 +29,13 @@ export default async function Page(req) {
               className="flex ga-4 bg-main hover:bg-accent-secondary p-4 rounded-lg gap-4"
             >
               <Image
-                src={`/game/${game.image}`}
+                src={getGameThumbnailUrl(game.image)}
                 alt={game.title}
                 className="w-2/6 lg:w-1/6 rounded-md"
                 width={300}
                 height={300}
                 quality={50}
+                unoptimized
               />
               <div className="flex flex-col gap-4">
                 <h2 className="text-xl">{game.title}</h2>
