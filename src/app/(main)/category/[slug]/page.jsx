@@ -1,6 +1,9 @@
 import { getCategoryBySlug, getGamesByCategory } from "@/lib/gameQueries";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
+import Image from "next/image";
+
+const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
 
 export async function generateMetadata({ params, searchParams }) {
   const siteUrl = getSiteUrl();
@@ -56,13 +59,16 @@ export default async function Page({ params, searchParams }) {
         ) : (
           games.map((game) => (
             <a href={`/game/${game.slug}`} key={game.id} className='group'>
-              <div className='overflow-hidden rounded-lg border-accent-secondary border mb-2'>
-                <img 
+              <div className='relative w-full aspect-square overflow-hidden rounded-lg border-accent-secondary border mb-2'>
+                <Image
                   src={getGameThumbnailUrl(game.image)}
-                  width={300}
-                  height={300}
                   alt={game.title}
-                  className='w-full h-full object-cover transition-transform duration-300 group-hover:scale-105' />
+                  fill
+                  sizes='(max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw'
+                  unoptimized={isProxyImageSource}
+                  quality={80}
+                  className='object-cover transition-transform duration-300 group-hover:scale-105'
+                />
               </div>
               <h1 className='font-medium'>{game.title}</h1>
             </a>
