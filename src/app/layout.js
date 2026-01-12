@@ -1,6 +1,7 @@
 import { Inter, Dela_Gothic_One } from "next/font/google";
 import "./globals.css";
 import { getSiteUrl } from "@/lib/siteUrl";
+import Script from "next/script";
 
 const InterBodyFont = Inter({
   subsets: ["latin"],
@@ -48,9 +49,18 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(() => {\n  try {\n    const stored = localStorage.getItem('theme');\n    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;\n    const isDark = stored ? stored === 'dark' : prefersDark;\n    document.documentElement.classList.toggle('dark', isDark);\n  } catch (e) {\n    // ignore\n  }\n})();`,
+          }}
+        />
+      </head>
       <body
-        className={`${InterBodyFont.variable} ${DeltaHeadingFont.variable} antialiased bg-main`}
+        className={`${InterBodyFont.variable} ${DeltaHeadingFont.variable} antialiased`}
       >
         {children}
       </body>

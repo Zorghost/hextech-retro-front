@@ -21,7 +21,7 @@ export default function SideBarNav({ categoryMenu }) {
   return (
     <>
       <div className="text-accent text-xs mb-2">MENU</div>
-      <ul className="bg-muted flex flex-col gap-2 mb-6">
+      <ul className="flex flex-col gap-2 mb-6">
         {mainMenuItems.map((item, i) => (
           <li key={i}>
             <a
@@ -40,7 +40,7 @@ export default function SideBarNav({ categoryMenu }) {
       </ul>
 
       <div className="text-accent text-xs mb-2">CATEGORIES</div>
-      <ul className="bg-muted flex flex-col gap-2 mb-6">
+      <ul className="flex flex-col gap-2 mb-6">
         {categoryMenu.map((item) => (
           <li key={item.id}>
             <a

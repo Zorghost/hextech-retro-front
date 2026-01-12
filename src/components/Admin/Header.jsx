@@ -1,9 +1,10 @@
 import Image from "next/image";
 import { signOut } from "@/app/auth";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Header() {
   return (
-    <header className="px-4 flex h-14 shrink-0 items-center gap-4 justify-between">
+    <header className="px-4 flex h-14 shrink-0 items-center gap-4 justify-between border-b border-accent-secondary bg-main/70 backdrop-blur supports-[backdrop-filter]:bg-main/50 sticky top-0 z-40">
       <a href="/" className="flex items-center gap-2">
         <Image
           src="/logo.svg"
@@ -15,6 +16,8 @@ export default function Header() {
       </a>
 
       <nav className="flex gap-4 md:gap-6">
+
+        <ThemeToggle />
 
         <form
           action={async () => {

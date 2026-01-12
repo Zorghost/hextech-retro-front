@@ -6,6 +6,9 @@ import { getGameThumbnailUrl, getRomUrlWithBase } from "@/lib/assetUrls";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { notFound } from "next/navigation";
 import Script from "next/script";
+import Image from "next/image";
+
+const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
 
 export async function generateMetadata({ params }) {
   const game = await getGameBySlug(params.slug);
@@ -98,15 +101,15 @@ export default async function Page({ params }) {
   const romUrl = game?.game_url ? getRomUrlWithBase(game.game_url, romBaseUrl) : null;
 
   return (
-    <div>
+    <div className="space-y-6">
       <Script
         id="breadcrumb-jsonld"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
 
-      <nav className="rounded-md w-full mb-4">
-        <ol className="list-reset flex">
+      <nav className="rounded-md w-full">
+        <ol className="list-reset flex text-sm text-accent">
           <li>
             <a href="/">Home</a>
           </li>
@@ -129,10 +132,52 @@ export default async function Page({ params }) {
         </ol>
       </nav>
 
+      <header className="card p-4 md:p-6">
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="relative h-36 w-36 md:h-40 md:w-40 overflow-hidden rounded-xl bg-accent-secondary">
+            {game?.image ? (
+              <Image
+                src={getGameThumbnailUrl(game.image)}
+                alt={game.title}
+                fill
+                sizes="160px"
+                unoptimized={isProxyImageSource}
+                className="object-cover"
+              />
+            ) : null}
+          </div>
+
+          <div className="flex-1">
+            <h1 className="font-display text-2xl md:text-3xl">{game.title}</h1>
+            {primaryCategory ? (
+              <div className="text-sm text-accent mt-2">
+                <a className="hover:underline underline-offset-4" href={`/category/${primaryCategory.slug}`}>
+                  {primaryCategory.title}
+                </a>
+                {primaryCategory.core ? <span className="ml-2">• Core: {primaryCategory.core}</span> : null}
+              </div>
+            ) : null}
+
+            {game.description ? (
+              <p className="text-accent mt-4 max-w-3xl leading-relaxed">{game.description}</p>
+            ) : null}
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <a href="#game" className="btn-primary">Play now</a>
+              {romUrl ? (
+                <a href={romUrl} className="btn-secondary" rel="noreferrer" target="_blank">
+                  Open ROM
+                </a>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </header>
+
       <GameEmulator game={game} romUrl={romUrl} />
 
       <div className="mt-8">
-        <Suspense fallback={<p>Loading game...</p>}>
+        <Suspense fallback={<p className="text-sm text-accent">Loading comments…</p>}>
           <Disqus
             url={`${process.env.NEXT_WEBSITE_URL}/game/${game?.slug}`}
             identifier={game?.id}

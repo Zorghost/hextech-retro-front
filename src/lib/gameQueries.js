@@ -21,20 +21,33 @@ export async function getGamesByCategory(categorySlug, page = 1) {
   const ITEMS_PER_PAGE = 20;
   const skip = (page - 1) * ITEMS_PER_PAGE;
 
+  // Sorting for public listings.
+  // NOTE: There is no "popularity" field in the schema currently.
+  const sort = arguments.length >= 3 ? arguments[2] : "newest";
+  const orderBy =
+    sort === "az"
+      ? { title: "asc" }
+      : sort === "za"
+        ? { title: "desc" }
+        : { created_at: "desc" };
+
   const [games, totalCount] = await Promise.all([
     prisma.game.findMany({
       where: {
+        published: true,
         categories: {
           some: {
             slug: categorySlug,
           },
         },
       },
+      orderBy,
       skip,
       take: ITEMS_PER_PAGE,
     }),
     prisma.game.count({
       where: {
+        published: true,
         categories: {
           some: {
             slug: categorySlug,
@@ -142,6 +155,7 @@ export async function getCategoryMenu() {
 export async function getSearchResults(params) {
   return await prisma.game.findMany({
     where: {
+      published: true,
       title: {
         contains: params,
       },
