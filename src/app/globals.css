@@ -4,72 +4,10 @@
 
 @layer base {
   html {
-    /* Light theme defaults */
-    --color-primary: 241 245 249;
-    --color-main: 255 255 255;
-    --color-accent: 71 85 105;
-    --color-accent-secondary: 226 232 240;
-    --color-error: 220 38 38;
-    --color-success: 22 163 74;
-
-    @apply text-slate-900;
-  }
-
-  html.dark {
-    /* Dark theme (original palette) */
-    --color-primary: 7 29 44;
-    --color-main: 3 19 34;
-    --color-accent: 68 97 113;
-    --color-accent-secondary: 10 39 55;
-    --color-error: 220 38 38;
-    --color-success: 22 163 74;
-
     @apply text-slate-50;
   }
-
   body {
     font-family: var(--body-font);
-    @apply bg-main;
-  }
-}
-
-@layer components {
-  .card {
-    @apply rounded-xl border border-accent-secondary bg-main/80 backdrop-blur;
-  }
-
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition;
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-main;
-    @apply disabled:opacity-50 disabled:pointer-events-none;
-  }
-
-  .btn-primary {
-    @apply btn bg-accent-gradient text-black border border-yellow-400/70 hover:brightness-110;
-  }
-
-  .btn-secondary {
-    @apply btn bg-accent-secondary text-inherit border border-accent-secondary hover:bg-primary;
-  }
-
-  .btn-danger {
-    @apply btn bg-error text-white hover:brightness-110;
-  }
-
-  .input {
-    @apply w-full rounded-lg bg-main border border-accent-secondary px-3 py-2 text-sm;
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400/60;
-  }
-
-  .select {
-    @apply w-full rounded-lg bg-main border border-accent-secondary px-3 py-2 text-sm;
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400/60;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  * {
-    scroll-behavior: auto !important;
   }
 }
 

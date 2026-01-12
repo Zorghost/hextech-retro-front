@@ -1,5 +1,8 @@
 import { ChevronRightIcon } from "@heroicons/react/24/outline"
-import GameCard from "@/components/GameCard";
+import Image from "next/image"
+import { getGameThumbnailUrl } from "@/lib/assetUrls";
+
+const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
 
 export default function GameCategory({category}) {
   if (!category) {
@@ -23,7 +26,21 @@ export default function GameCategory({category}) {
       ) : (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {games.map((game) => (
-          <GameCard key={game.id} game={game} subtitle={category.title} />
+          <a href={`/game/${game.slug}`} key={game.id} className="group">
+            <div className="relative w-full aspect-square overflow-hidden rounded-lg border border-accent-secondary mb-2">
+              <Image
+                src={getGameThumbnailUrl(game.image)}
+                alt={game.title}
+                fill
+                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                unoptimized={isProxyImageSource}
+                quality={80}
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+            </div>
+              <p className="text-sm text-accent">{category.title}</p>
+              <h1 className="font-medium">{game.title}</h1>
+          </a>
         ))}
       </div>
       )}

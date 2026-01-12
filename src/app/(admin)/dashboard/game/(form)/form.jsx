@@ -3,8 +3,6 @@ import { useFormState, useFormStatus } from "react-dom";
 import { createGame, deleteFormAction } from "@/app/(admin)/dashboard/game/(form)/actions"
 import { PhotoIcon, ArchiveBoxIcon } from "@heroicons/react/24/outline";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
-import Toast from "@/components/Toast";
-import { useMemo, useState } from "react";
 
 const initialState = { message: null }
 
@@ -15,7 +13,7 @@ function SubmitButton() {
     <button 
       type="submit"
       aria-disabled={pending}
-      className="btn-primary w-full">
+      className="w-full text-white bg-yellow-500 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
         {pending ? "Saving..." : "Save"}
     </button>
   )
@@ -23,21 +21,14 @@ function SubmitButton() {
 
 export default function GameForm({categories, game}) {
   const [state, formAction] = useFormState(createGame, initialState);
-  const [thumbName, setThumbName] = useState("");
-  const [romName, setRomName] = useState("");
-
-  const toastTone = useMemo(() => {
-    if (!state?.status) return "info";
-    if (state.status === "success") return "success";
-    if (state.status === "error") return "error";
-    return "info";
-  }, [state?.status]);
 
   return (
     <div>
-      <div className="mb-4">
-        <Toast message={state?.message} tone={toastTone} />
-      </div>
+      {state.message && (
+        <p className={`text-sm mb-4`} style={{ 'color': state.color }}>
+          {state.message} - Status: {state.status} - Color: {state.color}
+        </p>
+      )}
       
       <form className="flex flex-col lg:flex-row gap-8" action={formAction}>
 
@@ -50,7 +41,7 @@ export default function GameForm({categories, game}) {
               className="mb-4 rounded-md"
             />
           ) : (
-            <p className="text-sm text-accent">No image available</p>
+            <p>No image available</p>
           )}
 
           <div className="mb-4">
@@ -76,10 +67,8 @@ export default function GameForm({categories, game}) {
                 name="thumbnailFile"
                 accept="image/png, image/jpg, image/jpeg, image/webp"
                 className="hidden"
-                onChange={(e) => setThumbName(e.target.files?.[0]?.name ?? "")}
               />
             </label>
-            {thumbName ? <div className="text-xs text-accent mt-2">Selected: {thumbName}</div> : null}
           </div>
 
 
@@ -88,9 +77,7 @@ export default function GameForm({categories, game}) {
               Upload Game
             </p>
 
-            {game?.game_url ? (
-              <div className="text-xs text-accent mb-2">Current: {game.game_url}</div>
-            ) : null}
+            File: {game?.game_url}
 
             <label htmlFor="gameFile"
             className="flex flex-col items-center justify-center w-full h-40 border border-accent
@@ -110,10 +97,8 @@ export default function GameForm({categories, game}) {
                 name="gameFile"
                 accept=".zip,.rar,.7zip"
                 className="hidden"
-                onChange={(e) => setRomName(e.target.files?.[0]?.name ?? "")}
               />
             </label>
-            {romName ? <div className="text-xs text-accent mt-2">Selected: {romName}</div> : null}
           </div>
         </div>
 
@@ -127,7 +112,8 @@ export default function GameForm({categories, game}) {
               id="title"
               name="title"
               required
-              className="input mb-4"
+              className="bg-black border border-accent sm:text-sm rounded-lg focus:ring-primary-600
+              block w-full p-2 mb-4"
               defaultValue={game?.title}
             />
           </div>
@@ -141,7 +127,8 @@ export default function GameForm({categories, game}) {
               id="slug"
               name="slug"
               required
-              className="input mb-4"
+              className="bg-black border border-accent sm:text-sm rounded-lg focus:ring-primary-600
+              block w-full p-2 mb-4"
               defaultValue={game?.slug}
             />
           </div>
@@ -157,7 +144,8 @@ export default function GameForm({categories, game}) {
               id="description"
               name="description"
               required
-              className="input mb-4"
+              className="bg-black border border-accent sm:text-sm rounded-lg focus:ring-primary-600
+              block w-full p-2 mb-4"
               defaultValue={game?.description}
             />
           </div>
@@ -170,8 +158,9 @@ export default function GameForm({categories, game}) {
               id="category"
               name="category"
               required
-              className="select mb-4"
-              defaultValue={game?.categories?.[0]?.id}
+              className="bg-black border border-accent sm:text-sm rounded-lg focus:ring-primary-600
+              block w-full p-2 mb-4"
+              defaultValue={game?.categories[0].id}
             >
             
             {categories?.map((category) => (
@@ -191,20 +180,16 @@ export default function GameForm({categories, game}) {
             <div className="flex gap-4">
               
               <div className="flex gap-2">
-                <input type="radio" id="published" name="published" value="true" defaultChecked={game?.published === true}/>
+                <input type="radio" id="published" name="published" value="true"/>
                 <label htmlFor="published">Published</label>
               </div>
 
               <div className="flex gap-2">
-                <input type="radio" id="private" name="published" value="false" defaultChecked={game?.published !== true}/>
+                <input type="radio" id="private" name="published" value="false"/>
                 <label htmlFor="private">Private</label>
               </div>
             </div>
-            {typeof game?.published === "boolean" ? (
-              <div className="text-xs text-accent mt-2">
-                {game.published ? "This game is published." : "This game is private."}
-              </div>
-            ) : null}
+            {game?.published ? 'This game was published' : 'This game is not published.'}
 
           </div>
 
@@ -215,7 +200,7 @@ export default function GameForm({categories, game}) {
 
       <form action={deleteFormAction}>
         <input type="hidden" name="gameId" value={game?.id} />
-        <button type="submit" className="btn-danger mt-4">Delete Game</button>
+        <button type="submit" className="bg-red-600 text-white p-2 rounded-lg text-sm">Delete Game</button>
       </form>
 
     </div>

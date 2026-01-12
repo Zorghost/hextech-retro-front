@@ -26,7 +26,7 @@ export default async function Page(req) {
           <li key={game.id} className="mb-2">
             <a
               href={`/game/${game.slug}`}
-              className="card flex p-4 gap-4 hover:bg-accent-secondary transition"
+              className="flex ga-4 bg-main hover:bg-accent-secondary p-4 rounded-lg gap-4"
             >
               <Image
                 src={getGameThumbnailUrl(game.image)}
@@ -39,7 +39,7 @@ export default async function Page(req) {
               />
               <div className="flex flex-col gap-4">
                 <h2 className="text-xl">{game.title}</h2>
-                <p className="text-accent line-clamp-3">{game.description}</p>
+                <p>{game.description}</p>
               </div>
             </a>
           </li>
