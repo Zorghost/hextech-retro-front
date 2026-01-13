@@ -3,6 +3,7 @@ import { useFormState, useFormStatus } from "react-dom";
 import { createGame, deleteFormAction } from "@/app/(admin)/dashboard/game/(form)/actions"
 import { PhotoIcon, ArchiveBoxIcon } from "@heroicons/react/24/outline";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
+import Image from "next/image";
 
 const initialState = { message: null }
 
@@ -37,8 +38,14 @@ export default function GameForm({categories, game}) {
         <div className="lg:w-80">
 
           {game?.image ? (
-            <img src={getGameThumbnailUrl(game?.image)} alt={game?.title} 
-              className="mb-4 rounded-md"
+            <Image
+              src={getGameThumbnailUrl(game?.image)}
+              alt={game?.title || "Game thumbnail"}
+              width={320}
+              height={180}
+              className="mb-4 rounded-md w-full h-auto"
+              quality={85}
+              unoptimized
             />
           ) : (
             <p>No image available</p>

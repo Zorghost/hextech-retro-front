@@ -1,7 +1,18 @@
 import { prisma } from "@/lib/prisma";
 
 export async function getAllGames() {
-  return await prisma.game.findMany({});
+  return await prisma.game.findMany({
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      description: true,
+      image: true,
+      game_url: true,
+      published: true,
+      created_at: true,
+    },
+  });
 }
 
 export async function getPublishedGamesForSitemap() {
@@ -31,6 +42,12 @@ export async function getGamesByCategory(categorySlug, page = 1) {
       },
       skip,
       take: ITEMS_PER_PAGE,
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        image: true,
+      },
     }),
     prisma.game.count({
       where: {
@@ -52,8 +69,23 @@ export async function getGameBySlug(slug) {
     where: {
       slug: slug,
     },
-    include: {
-      categories: true,
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      description: true,
+      image: true,
+      game_url: true,
+      published: true,
+      created_at: true,
+      categories: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          core: true,
+        },
+      },
     },
   });
 }
@@ -121,19 +153,46 @@ export async function getGamesByCategoryId(categoryId) {
           published: true,
         },
         take: 8,
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          image: true,
+        },
       },
     },
   });
 }
 
 export async function getGameCategories() {
-  return await prisma.category.findMany({});
+  return await prisma.category.findMany({
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      core: true,
+      image: true,
+    },
+    orderBy: {
+      id: "asc",
+    },
+  });
 }
 
 export async function getCategoryMenu() {
   return await prisma.category.findMany({
-    include: {
-      games: true,
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      _count: {
+        select: {
+          games: true,
+        },
+      },
+    },
+    orderBy: {
+      id: "asc",
     },
   });
 }
@@ -148,6 +207,13 @@ export async function getSearchResults(params) {
       },
     },
     take: 100,
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      description: true,
+      image: true,
+    },
   });
 }
 

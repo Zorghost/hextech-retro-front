@@ -1,5 +1,6 @@
 import { getGameCategories } from "@/lib/gameQueries"
 import EmptyState from "@/components/ui/EmptyState";
+import Image from "next/image";
 
 export default async function Page() {
   const categories = await getGameCategories();
@@ -25,12 +26,13 @@ export default async function Page() {
         {categories.map((game) => (
           <a href={`/category/${game.slug}`} key={game.id} className="group">
             <div className="overflow-hidden rounded-lg border-accent-secondary border">
-              <img
-                src={`./category/${game.image}`}
+              <Image
+                src={`/category/${game.image}`}
                 width={300}
                 height={300}
                 alt={game.title}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"/>
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
             </div>
             <h1>{game.title}</h1>
             <p>{game.description}</p>

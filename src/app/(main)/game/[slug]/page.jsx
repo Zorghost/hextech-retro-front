@@ -144,7 +144,7 @@ export default async function Page({ params }) {
           }
         >
           <Disqus
-            url={`${process.env.NEXT_WEBSITE_URL}/game/${game?.slug}`}
+            url={canonical}
             identifier={game?.id}
             title={game?.title}
           />

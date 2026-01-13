@@ -53,7 +53,7 @@ export default function SideBarNav({ categoryMenu }) {
             >
               <div className={`categoryicon ${item.slug}`}></div>
               {item.title}{" "}
-              <span className="text-accent">({item?.games?.length})</span>
+              <span className="text-accent">({item?._count?.games ?? 0})</span>
             </a>
           </li>
         ))}
