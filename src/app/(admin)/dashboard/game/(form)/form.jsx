@@ -20,8 +20,23 @@ function SubmitButton() {
   )
 }
 
+function DeleteButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      aria-disabled={pending}
+      className="bg-red-600 text-white p-2 rounded-lg text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+    >
+      {pending ? "Deleting..." : "Delete Game"}
+    </button>
+  )
+}
 export default function GameForm({categories, game}) {
   const [state, formAction] = useFormState(createGame, initialState);
+  const publishedDefault = typeof game?.published === "boolean" ? game.published : false;
 
   return (
     <div>
@@ -187,16 +202,30 @@ export default function GameForm({categories, game}) {
             <div className="flex gap-4">
               
               <div className="flex gap-2">
-                <input type="radio" id="published" name="published" value="true"/>
+                <input
+                  type="radio"
+                  id="published"
+                  name="published"
+                  value="true"
+                  defaultChecked={publishedDefault === true}
+                  required
+                />
                 <label htmlFor="published">Published</label>
               </div>
 
               <div className="flex gap-2">
-                <input type="radio" id="private" name="published" value="false"/>
+                <input
+                  type="radio"
+                  id="private"
+                  name="published"
+                  value="false"
+                  defaultChecked={publishedDefault === false}
+                  required
+                />
                 <label htmlFor="private">Private</label>
               </div>
             </div>
-            {game?.published ? 'This game was published' : 'This game is not published.'}
+            {publishedDefault ? 'This game was published' : 'This game is not published.'}
 
           </div>
 
@@ -205,10 +234,18 @@ export default function GameForm({categories, game}) {
         
       </form>
 
-      <form action={deleteFormAction}>
-        <input type="hidden" name="gameId" value={game?.id} />
-        <button type="submit" className="bg-red-600 text-white p-2 rounded-lg text-sm">Delete Game</button>
-      </form>
+      {game?.id && (
+        <form
+          action={deleteFormAction}
+          onSubmit={(e) => {
+            const ok = window.confirm("Delete this game? This action cannot be undone.");
+            if (!ok) e.preventDefault();
+          }}
+        >
+          <input type="hidden" name="gameId" value={game.id} />
+          <DeleteButton />
+        </form>
+      )}
 
     </div>
   )

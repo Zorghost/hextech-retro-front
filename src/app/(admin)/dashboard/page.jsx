@@ -1,6 +1,7 @@
 import Header from "@/components/Admin/Header"
 import { getGameCategories, getGamesPage, getTotalGamesCount } from "@/lib/adminQueries"
 import Image from "next/image";
+import Link from "next/link";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 import EmptyState from "@/components/ui/EmptyState";
 
@@ -98,9 +99,9 @@ export default async function Page({ searchParams }) {
         <div>
           <div className="flex justify-between gap-4 mb-4">
             <h1 className="font-display">Games</h1>
-            <a href="/dashboard/game/add" className="text-sm border border-accent py-2 px-3 rounded-xl">
+            <Link href="/dashboard/game/add" className="text-sm border border-accent py-2 px-3 rounded-xl">
               + Add New Game
-            </a>
+            </Link>
           </div>
 
           <form method="GET" action="/dashboard" className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
@@ -150,9 +151,9 @@ export default async function Page({ searchParams }) {
                 : `Showing ${startIndex}-${endIndex} of ${gamesPage.total}`}
             </span>
             {(q || category || published) && (
-              <a href="/dashboard" className="underline">
+              <Link href="/dashboard" className="underline">
                 Clear filters
-              </a>
+              </Link>
             )}
           </div>
 
@@ -161,18 +162,22 @@ export default async function Page({ searchParams }) {
               title="No games yet"
               description={q || category || published ? "No games match your filters." : "Create your first game to populate the library."}
               action={
-                <a
+                <Link
                   href="/dashboard/game/add"
                   className="inline-flex items-center justify-center rounded-[24px] bg-accent px-5 py-3 text-base font-medium text-center"
                 >
                   Add New Game
-                </a>
+                </Link>
               }
             />
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               {gamesPage.games.map((game) => (
-                <a href={`/dashboard/game/${game.id}`} key={game.id} className="flex gap-4 hover:bg-accent-secondary rounded-md">
+                <Link
+                  href={`/dashboard/game/${game.id}`}
+                  key={game.id}
+                  className="flex gap-4 hover:bg-accent-secondary rounded-md"
+                >
                   <div className="w-16 h-16 bg-slate-100 overflow-hidden rounded-md">
                     <Image
                       src={getGameThumbnailUrl(game.image)}
@@ -189,7 +194,7 @@ export default async function Page({ searchParams }) {
                     <h1>{game.title}</h1>
                   </div>
 
-                </a>
+                </Link>
               ))}
             </div>
           )}
@@ -202,9 +207,9 @@ export default async function Page({ searchParams }) {
 
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {prevHref ? (
-                  <a href={prevHref} className="text-sm border border-accent py-2 px-3 rounded-xl">
+                  <Link href={prevHref} className="text-sm border border-accent py-2 px-3 rounded-xl">
                     ← Prev
-                  </a>
+                  </Link>
                 ) : (
                   <span className="text-sm border border-accent py-2 px-3 rounded-xl opacity-50 cursor-not-allowed">
                     ← Prev
@@ -233,21 +238,21 @@ export default async function Page({ searchParams }) {
                         {item.page}
                       </span>
                     ) : (
-                      <a
+                      <Link
                         key={item.page}
                         href={href}
                         className="text-sm border border-accent py-2 px-3 rounded-xl"
                       >
                         {item.page}
-                      </a>
+                      </Link>
                     );
                   })}
                 </div>
 
                 {nextHref ? (
-                  <a href={nextHref} className="text-sm border border-accent py-2 px-3 rounded-xl">
+                  <Link href={nextHref} className="text-sm border border-accent py-2 px-3 rounded-xl">
                     Next →
-                  </a>
+                  </Link>
                 ) : (
                   <span className="text-sm border border-accent py-2 px-3 rounded-xl opacity-50 cursor-not-allowed">
                     Next →
