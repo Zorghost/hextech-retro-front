@@ -6,6 +6,7 @@ import {
   CubeIcon,
 } from "@heroicons/react/24/outline";
 import { useState } from "react";
+import Link from "next/link";
 
 export default function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
@@ -72,17 +73,18 @@ export default function MobileNav() {
           <ul className="bg-muted flex flex-col mb-6" role="menu">
             {mobileNavItems.map((item) => (
               <li key={item.name} className="border-accent" role="none">
-                <a
+                <Link
                   href={item.path}
                   className="text-xl font-medium hover:bg-accent rounderd-md flex gap-4 items-center border-b border-accent py-4 px-6"
                   role="menuitem"
+                  onClick={() => setIsOpen(false)}
                 >
                   <item.icon
                     className="h-6 w-6 text-white"
                     aria-hidden="true"
                   />
                   {item.name}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

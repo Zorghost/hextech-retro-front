@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
-import { PrismaClient } from "@prisma/client"
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 const bcrypt = require('bcryptjs');
 
 export default async function Page() {

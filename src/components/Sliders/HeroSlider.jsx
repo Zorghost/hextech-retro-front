@@ -4,6 +4,7 @@ import { Navigation, Pagination, Scrollbar, A11y } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
+import Link from "next/link";
 
 export default function HeroSlider() {
   return (
@@ -42,12 +43,12 @@ export default function HeroSlider() {
               Relive the classics! Dive into our collection of retro games and
               enjoy them for free. Start playing now!
             </p>
-            <a
-              href="#"
+            <Link
+              href="/search?q=mario"
               className="text-sm bg-accent-gradient py-3 px-6 rounded-xl border border-yellow-400 uppercase"
             >
               Play Mario
-            </a>
+            </Link>
           </div>
         </SwiperSlide>
 
@@ -64,12 +65,12 @@ export default function HeroSlider() {
               Relive the classics! Dive into our collection of retro games and
               enjoy them for free. Start playing now!
             </p>
-            <a
-              href="#"
+            <Link
+              href="/category"
               className="text-sm bg-accent-gradient py-3 px-6 rounded-xl border border-yellow-400 uppercase"
             >
-              Play Mario
-            </a>
+              Browse Games
+            </Link>
           </div>
         </SwiperSlide>
       </Swiper>

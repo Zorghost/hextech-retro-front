@@ -1,12 +1,32 @@
 import { getGameBySlug } from "@/lib/gameQueries";
-import GameEmulator from "@/components/GameEmulator";
-import Disqus from "@/components/Disqus";
 import { Suspense } from "react";
 import { getGameThumbnailUrl, getRomUrlWithBase } from "@/lib/assetUrls";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { notFound } from "next/navigation";
 import Script from "next/script";
 import { Skeleton } from "@/components/ui/Skeleton";
+import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const GameEmulator = dynamic(() => import("@/components/GameEmulator"), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded-xl border border-accent-secondary bg-main p-4">
+      <Skeleton className="h-[240px] w-full" />
+    </div>
+  ),
+});
+
+const Disqus = dynamic(() => import("@/components/Disqus"), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded-xl border border-accent-secondary bg-main p-4">
+      <Skeleton className="h-6 w-40 mb-3" />
+      <Skeleton className="h-4 w-full mb-2" />
+      <Skeleton className="h-4 w-5/6" />
+    </div>
+  ),
+});
 
 export async function generateMetadata({ params }) {
   const game = await getGameBySlug(params.slug);
@@ -109,14 +129,14 @@ export default async function Page({ params }) {
       <nav className="rounded-md w-full mb-4">
         <ol className="list-reset flex">
           <li>
-            <a href="/">Home</a>
+            <Link href="/">Home</Link>
           </li>
           <li>
             <span className="text-gray-500 mx-2">/</span>
           </li>
           <li>
             {primaryCategory ? (
-              <a href={`/category/${primaryCategory.slug}`}>{primaryCategory.title}</a>
+              <Link href={`/category/${primaryCategory.slug}`}>{primaryCategory.title}</Link>
             ) : (
               <span className="text-gray-500">Category</span>
             )}
@@ -133,21 +153,11 @@ export default async function Page({ params }) {
       <GameEmulator game={game} romUrl={romUrl} />
 
       <div className="mt-8">
-        <Suspense
-          fallback={
-            <div className="rounded-xl border border-accent-secondary bg-main p-4">
-              <Skeleton className="h-6 w-40 mb-3" />
-              <Skeleton className="h-4 w-full mb-2" />
-              <Skeleton className="h-4 w-5/6" />
-            </div>
-          }
-        >
-          <Disqus
-            url={`${process.env.NEXT_WEBSITE_URL}/game/${game?.slug}`}
-            identifier={game?.id}
-            title={game?.title}
-          />
-        </Suspense>
+        <Disqus
+          url={`${process.env.NEXT_WEBSITE_URL}/game/${game?.slug}`}
+          identifier={game?.id}
+          title={game?.title}
+        />
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { getAllGames, getGameCategories } from "@/lib/adminQueries"
 import Image from "next/image";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 import EmptyState from "@/components/ui/EmptyState";
+import Link from "next/link";
 
 export const revalidate = 0;
 
@@ -36,9 +37,9 @@ export default async function Page() {
         <div>
           <div className="flex justify-between gap-4 mb-4">
             <h1 className="font-display">Games</h1>
-            <a href="/dashboard/game/add" className="text-sm border border-accent py-2 px-3 rounded-xl">
+            <Link href="/dashboard/game/add" className="text-sm border border-accent py-2 px-3 rounded-xl">
               + Add New Game
-            </a>
+            </Link>
           </div>
 
           {games.length === 0 ? (
@@ -46,18 +47,18 @@ export default async function Page() {
               title="No games yet"
               description="Create your first game to populate the library."
               action={
-                <a
+                <Link
                   href="/dashboard/game/add"
                   className="inline-flex items-center justify-center rounded-[24px] bg-accent px-5 py-3 text-base font-medium text-center"
                 >
                   Add New Game
-                </a>
+                </Link>
               }
             />
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               {games.map((game) => (
-                <a href={`/dashboard/game/${game.id}`} key={game.id} className="flex gap-4 hover:bg-accent-secondary rounded-md">
+                <Link href={`/dashboard/game/${game.id}`} key={game.id} className="flex gap-4 hover:bg-accent-secondary rounded-md">
                   <div className="w-16 h-16 bg-slate-100 overflow-hidden rounded-md">
                     <Image
                       src={getGameThumbnailUrl(game.image)}
@@ -66,7 +67,6 @@ export default async function Page() {
                       width={128}
                       height={128}
                       quality={90}
-                      unoptimized
                     />
                   </div>
                   <div className="flex flex-col gap-1 justify-center">
@@ -74,7 +74,7 @@ export default async function Page() {
                     <h1>{game.title}</h1>
                   </div>
 
-                </a>
+                </Link>
               ))}
             </div>
           )}

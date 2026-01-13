@@ -7,8 +7,7 @@ import "swiper/css/pagination";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import { getCategoryImageUrl } from "@/lib/assetUrls";
-
-const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
+import Link from "next/link";
 
 export default function CategorySlider({ categories }) {
   const breakpoints = {
@@ -27,13 +26,13 @@ export default function CategorySlider({ categories }) {
     <div className="mb-6">
       <div className="flex justify-between gap-4">
         <h2 className="font-display mb-4 items-center">Categories</h2>
-        <a
+        <Link
           href="/category"
           className="text-sm font-medium hover:underline underline-offset-4"
         >
           View All{" "}
           <ChevronRightIcon className="h-4 w-4 inline-block text-accent" />
-        </a>
+        </Link>
       </div>
 
       <Swiper
@@ -56,20 +55,19 @@ export default function CategorySlider({ categories }) {
       >
         {categories.map((item, i) => (
           <SwiperSlide key={i} className="group">
-            <a href={`/category/${item.slug}`} className="group">
+            <Link href={`/category/${item.slug}`} className="group">
               <div className="relative w-full aspect-square overflow-hidden rounded-lg border-accent-secondary border mb-2">
                 <Image
                   src={getCategoryImageUrl(item.image)}
                   alt={item.title}
                   fill
                   sizes="(max-width: 768px) 33vw, (max-width: 1024px) 16vw, 12vw"
-                  unoptimized={isProxyImageSource}
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                 />
               </div>
               <h1>{item.title}</h1>
               <p>{item.description}</p>
-            </a>
+            </Link>
           </SwiperSlide>
         ))}
       </Swiper>

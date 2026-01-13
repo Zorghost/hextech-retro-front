@@ -1,10 +1,11 @@
 import Image from "next/image";
 import { signOut } from "@/app/auth";
+import Link from "next/link";
 
 export default function Header() {
   return (
     <header className="px-4 flex h-14 shrink-0 items-center gap-4 justify-between">
-      <a href="/" className="flex items-center gap-2">
+      <Link href="/" className="flex items-center gap-2">
         <Image
           src="/logo.svg"
           alt="TheNextGameStation"
@@ -12,7 +13,7 @@ export default function Header() {
           height={33.8}
           loading="eager"
         />
-      </a>
+      </Link>
 
       <nav className="flex gap-4 md:gap-6">
 
@@ -25,7 +26,7 @@ export default function Header() {
           <button type="submit">Sign Out</button>
         </form>
 
-        <a href="/">Vist Main Site &#8599;</a>
+        <Link href="/">Vist Main Site &#8599;</Link>
       </nav>
     </header>
   );
