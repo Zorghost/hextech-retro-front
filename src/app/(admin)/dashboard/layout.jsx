@@ -5,6 +5,8 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardLayout({ children }) {
   const session = await auth();
-  if (!session) redirect("/login");
+  if (!session || (session?.user?.role ?? "").toLowerCase() !== "admin") {
+    redirect("/login");
+  }
   return <div>{children}</div>;
 }

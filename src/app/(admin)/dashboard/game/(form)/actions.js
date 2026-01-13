@@ -1,9 +1,17 @@
 "use server";
+import { auth } from "@/app/auth";
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+
+async function assertAdmin() {
+  const session = await auth();
+  if (!session || (session?.user?.role ?? "").toLowerCase() !== "admin") {
+    throw new Error("Not authorized.");
+  }
+}
 
 function getEnv(name, fallbackName) {
   return process.env[name] ?? (fallbackName ? process.env[fallbackName] : undefined);
@@ -19,6 +27,8 @@ function isValidUploadFile(value) {
 
 export async function createGame(prevState, formData) {
   try {
+    await assertAdmin();
+
     // Grab ID to update
     const id = formData.get("gameId");
     const title = formData.get("title");
@@ -207,6 +217,8 @@ async function uploadFileToS3(file, filename, contentType) {
 }
 
 export async function deleteFormAction(formData) {
+  await assertAdmin();
+
   // delete logic here
   if(!formData) {
     throw new Error("No form data received.");
