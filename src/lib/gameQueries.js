@@ -145,6 +145,7 @@ export async function getSearchResults(params) {
       published: true,
       title: {
         contains: params,
+        mode: "insensitive",
       },
     },
     take: 100,
