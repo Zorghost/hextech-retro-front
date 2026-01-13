@@ -4,6 +4,7 @@ import Disqus from "@/components/Disqus";
 import { Suspense } from "react";
 import { getGameThumbnailUrl, getRomUrlWithBase } from "@/lib/assetUrls";
 import { getSiteUrl } from "@/lib/siteUrl";
+import { safeJsonLdStringify } from "@/lib/jsonLd";
 import { notFound } from "next/navigation";
 import Script from "next/script";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -103,7 +104,7 @@ export default async function Page({ params }) {
       <Script
         id="breadcrumb-jsonld"
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(breadcrumbLd) }}
       />
 
       <nav className="rounded-md w-full mb-4">
