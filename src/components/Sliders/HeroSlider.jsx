@@ -1,6 +1,6 @@
 "use client";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination, Scrollbar, A11y } from "swiper/modules";
+import { Navigation, Pagination, Scrollbar, A11y, Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -9,12 +9,14 @@ export default function HeroSlider() {
   return (
     <div>
       <Swiper
-        modules={[Navigation, Pagination, Scrollbar, A11y]}
+        modules={[Navigation, Pagination, Scrollbar, A11y, Autoplay]}
         spaceBetween={50}
         slidesPerView={1}
         navigation
         pagination={{ clickable: true }}
         scrollbar={{ draggable: true }}
+        autoplay={{ delay: 6000, disableOnInteraction: false, pauseOnMouseEnter: true }}
+        loop
         className="h-[340px] md:h-[480px] w-full mb-6 rounded-lg border border-accent-secondary bg-main"
         style={{
           "--swiper-pagination-color": "#FFBA08",
@@ -43,7 +45,7 @@ export default function HeroSlider() {
               enjoy them for free. Start playing now!
             </p>
             <a
-              href="#"
+              href="/search?q=mario"
               className="text-sm bg-accent-gradient py-3 px-6 rounded-xl border border-yellow-400 uppercase"
             >
               Play Mario
@@ -56,19 +58,19 @@ export default function HeroSlider() {
           style={{ display: "flex" }}
         >
           <div className="max-w-3xl">
-            <div className="text-accent text-sm mb-2 uppercase">
-              Free Arcade Games
-            </div>
-            <h1 className="font-display text-4xl lg:text-6xl mb-4">Slide #2</h1>
+            <div className="text-accent text-sm mb-2 uppercase">Just added</div>
+            <h1 className="font-display text-4xl lg:text-6xl mb-4">
+              DISCOVER NEW GAMES
+            </h1>
             <p className="mb-6 max-w-[418px]">
-              Relive the classics! Dive into our collection of retro games and
-              enjoy them for free. Start playing now!
+              Check out the latest additions to the library — updated regularly
+              as new games get published.
             </p>
             <a
-              href="#"
+              href="/new-games"
               className="text-sm bg-accent-gradient py-3 px-6 rounded-xl border border-yellow-400 uppercase"
             >
-              Play Mario
+              View New Games
             </a>
           </div>
         </SwiperSlide>

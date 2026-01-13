@@ -142,10 +142,33 @@ export async function getCategoryMenu() {
 export async function getSearchResults(params) {
   return await prisma.game.findMany({
     where: {
+      published: true,
       title: {
         contains: params,
       },
     },
     take: 100,
+  });
+}
+
+export async function getLatestPublishedGames(limit = 10) {
+  const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.min(50, limit)) : 10;
+
+  return await prisma.game.findMany({
+    where: {
+      published: true,
+    },
+    orderBy: {
+      id: "desc",
+    },
+    take: safeLimit,
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      description: true,
+      image: true,
+      created_at: true,
+    },
   });
 }
