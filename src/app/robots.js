@@ -1,6 +1,8 @@
 import { getSiteUrl } from "@/lib/siteUrl";
 import { headers } from "next/headers";
 
+export const dynamic = "force-dynamic";
+
 function getOriginFromRequestHeaders() {
   const h = headers();
   const host = h.get("x-forwarded-host") || h.get("host");

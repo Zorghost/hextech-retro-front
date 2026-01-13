@@ -1,8 +1,9 @@
 "use server";
-import { prisma } from "@/lib/prisma";
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { redirect } from "next/navigation";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 
 function getEnv(name, fallbackName) {
   return process.env[name] ?? (fallbackName ? process.env[fallbackName] : undefined);
@@ -56,9 +57,6 @@ export async function createGame(prevState, formData) {
         where: { id: parseInt(id, 10) },
         data: gameData
       });
-      revalidateTag("games");
-      revalidateTag("categories");
-      revalidateTag("sitemap");
       revalidatePath("/");
 
       return {
@@ -112,9 +110,6 @@ export async function createGame(prevState, formData) {
       // Create new game
       await prisma.game.create({ data: gameData });
 
-      revalidateTag("games");
-      revalidateTag("categories");
-      revalidateTag("sitemap");
       revalidatePath("/");
       return {
         status: "success",
@@ -225,11 +220,6 @@ export async function deleteFormAction(formData) {
   await prisma.game.delete({
     where: { id: parseInt(id, 10) }
   })
-
-  revalidateTag("games");
-  revalidateTag("categories");
-  revalidateTag("sitemap");
-  revalidatePath("/");
 
   redirect("/dashboard");
 }

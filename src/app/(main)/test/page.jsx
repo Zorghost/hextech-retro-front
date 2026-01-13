@@ -1,6 +1,5 @@
-import { prisma } from "@/lib/prisma";
-
-export const dynamic = "force-dynamic";
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 
 const getAllGames = async () => {
   const games = await prisma.game.findMany();

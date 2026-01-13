@@ -1,7 +1,6 @@
 "use client";
 import { HomeIcon, CubeIcon } from "@heroicons/react/24/outline";
 import { usePathname } from "next/navigation";
-import Link from "next/link";
 
 export default function SideBarNav({ categoryMenu }) {
   const activeSegment = usePathname();
@@ -25,7 +24,7 @@ export default function SideBarNav({ categoryMenu }) {
       <ul className="bg-muted flex flex-col gap-2 mb-6">
         {mainMenuItems.map((item, i) => (
           <li key={i}>
-            <Link
+            <a
               href={item.slug}
               className={`text-sm tracking-wide flex gap-2 items-center p-1 px-2 ${
                 activeSegment === `${item.slug}`
@@ -35,7 +34,7 @@ export default function SideBarNav({ categoryMenu }) {
             >
               <item.icon className="size-6 text-accent" />
               {item.name}
-            </Link>
+            </a>
           </li>
         ))}
       </ul>
@@ -44,7 +43,7 @@ export default function SideBarNav({ categoryMenu }) {
       <ul className="bg-muted flex flex-col gap-2 mb-6">
         {categoryMenu.map((item) => (
           <li key={item.id}>
-            <Link
+            <a
               href={`/category/${item.slug}`}
               className={`text-sm tracking-wide flex gap-2 items-center p-1 px-2 ${
                 activeSegment === `/category/${item.slug}`
@@ -55,7 +54,7 @@ export default function SideBarNav({ categoryMenu }) {
               <div className={`categoryicon ${item.slug}`}></div>
               {item.title}{" "}
               <span className="text-accent">({item?.games?.length})</span>
-            </Link>
+            </a>
           </li>
         ))}
       </ul>

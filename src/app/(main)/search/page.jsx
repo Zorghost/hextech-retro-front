@@ -2,9 +2,6 @@ import Image from "next/image";
 import { getSearchResults } from "@/lib/gameQueries";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 import EmptyState from "@/components/ui/EmptyState";
-import Link from "next/link";
-
-export const dynamic = "force-dynamic";
 
 export default async function Page(req) {
   const searchQuery = req.searchParams.q;
@@ -29,12 +26,12 @@ export default async function Page(req) {
           title="Type something to search"
           description="Try a game title, platform, or keyword."
           action={
-            <Link
+            <a
               href="/category"
               className="inline-flex items-center justify-center rounded-[24px] border border-accent px-5 py-3 text-base font-medium"
             >
               Browse categories
-            </Link>
+            </a>
           }
         />
       ) : games.length === 0 ? (
@@ -44,12 +41,12 @@ export default async function Page(req) {
             title="No results"
             description={`No games matched “${safeQuery}”. Try a shorter query or different keywords.`}
             action={
-              <Link
+              <a
                 href="/category"
                 className="inline-flex items-center justify-center rounded-[24px] border border-accent px-5 py-3 text-base font-medium"
               >
                 Browse categories
-              </Link>
+              </a>
             }
           />
         </>
@@ -60,7 +57,7 @@ export default async function Page(req) {
           <ul>
             {games.map((game) => (
               <li key={game.id} className="mb-2">
-                <Link
+                <a
                   href={`/game/${game.slug}`}
                   className="flex ga-4 bg-main hover:bg-accent-secondary p-4 rounded-lg gap-4"
                 >
@@ -71,12 +68,13 @@ export default async function Page(req) {
                     width={300}
                     height={300}
                     quality={50}
+                    unoptimized
                   />
                   <div className="flex flex-col gap-4">
                     <h2 className="text-xl">{game.title}</h2>
                     <p>{game.description}</p>
                   </div>
-                </Link>
+                </a>
               </li>
             ))}
           </ul>

@@ -2,7 +2,6 @@ import Header from "@/components/Admin/Header"
 import { getGameCategories } from "@/lib/adminQueries"
 import GameForm from "@/app/(admin)/dashboard/game/(form)/form"
 import EmptyState from "@/components/ui/EmptyState";
-import Link from "next/link";
 
 export default async function Page() {
   const categories = await getGameCategories();
@@ -12,7 +11,7 @@ export default async function Page() {
       <Header />
 
       <div className="container mx-auto mb-8 px-4 min-h-[50rem] pb-8 relative mt-10">
-        <Link href="/dashboard" className="text-sm">&#8592; Back</Link>
+        <a href="/dashboard" className="text-sm">&#8592; Back</a>
         <div className="flex justify-between gap-4 mb-4">
           <h1 className="font-display">Add New Game</h1>
         </div>
@@ -22,12 +21,12 @@ export default async function Page() {
             title="No categories available"
             description="Create categories first so you can assign a game to them."
             action={
-              <Link
+              <a
                 href="/dashboard"
                 className="inline-flex items-center justify-center rounded-[24px] border border-accent px-5 py-3 text-base font-medium"
               >
                 Back to dashboard
-              </Link>
+              </a>
             }
           />
         ) : (

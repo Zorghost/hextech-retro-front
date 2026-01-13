@@ -2,7 +2,6 @@ import Header from "@/components/Header";
 import SideBar from "@/components/SideBar";
 import Footer from "@/components/Footer";
 
-// Avoid build-time DB access (Prisma) during static prerender.
 export const dynamic = "force-dynamic";
 
 export default function MainLayout ({ children }) {

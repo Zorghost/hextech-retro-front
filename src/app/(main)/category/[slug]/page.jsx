@@ -3,9 +3,8 @@ import { getSiteUrl } from "@/lib/siteUrl";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 import Image from "next/image";
 import EmptyState from "@/components/ui/EmptyState";
-import Link from "next/link";
 
-export const dynamic = "force-dynamic";
+const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
 
 export async function generateMetadata({ params, searchParams }) {
   const siteUrl = getSiteUrl();
@@ -46,7 +45,7 @@ export default async function Page({ params, searchParams }) {
       <nav className='rounded-md w-full mb-4'>
         <ol className='list-reset flex'>
           <li>
-            <Link href='/'>Home</Link>
+            <a href='/'>Home</a>
           </li>
           <li>
             <span className='text-gray-500 mx-2'>/</span>
@@ -62,30 +61,31 @@ export default async function Page({ params, searchParams }) {
               title="No games in this category"
               description="Try another category, or check back later."
               action={
-                <Link
+                <a
                   href="/category"
                   className="inline-flex items-center justify-center rounded-[24px] border border-accent px-5 py-3 text-base font-medium"
                 >
                   Browse categories
-                </Link>
+                </a>
               }
             />
           </div>
         ) : (
           games.map((game) => (
-            <Link href={`/game/${game.slug}`} key={game.id} className='group'>
+            <a href={`/game/${game.slug}`} key={game.id} className='group'>
               <div className='relative w-full aspect-square overflow-hidden rounded-lg border-accent-secondary border mb-2'>
                 <Image
                   src={getGameThumbnailUrl(game.image)}
                   alt={game.title}
                   fill
                   sizes='(max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw'
+                  unoptimized={isProxyImageSource}
                   quality={80}
                   className='object-cover transition-transform duration-300 group-hover:scale-105'
                 />
               </div>
               <h1 className='font-medium'>{game.title}</h1>
-            </Link>
+            </a>
           ))
         )}
       </div>
@@ -95,13 +95,13 @@ export default async function Page({ params, searchParams }) {
         <div className='flex justify-center mt-8'>
           <nav className='inline-flex rounded-md shadow'>
             {currentPage > 1 && (
-              <Link href={`/category/${params.slug}?page=${currentPage - 1}`}
+              <a href={`/category/${params.slug}?page=${currentPage - 1}`}
               className='px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50'>
                 Previous
-              </Link>
+              </a>
             )}
             {[...Array(totalPages).keys()].map((pageNum) => (
-              <Link href={`/category/${params.slug}?page=${pageNum + 1}`}
+              <a href={`/category/${params.slug}?page=${pageNum + 1}`}
               key={pageNum + 1}
               className={`px-3 py-2 border border-gray-300 bg-white text-sm font-medium ${
                 currentPage === pageNum + 1
@@ -109,15 +109,15 @@ export default async function Page({ params, searchParams }) {
                 : 'text-gray-500 hover:bg-gray-50'
               }`}>
               {pageNum + 1}
-              </Link>
+              </a>
             ))}
 
             {currentPage < totalPages && (
-              <Link href={`/category/${params.slug}?page=${currentPage + 1}`}
+              <a href={`/category/${params.slug}?page=${currentPage + 1}`}
               className='px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium 
               text-gray-500 hover:bg-gray-50'>
                 Next
-              </Link>
+              </a>
             )}
 
           </nav>

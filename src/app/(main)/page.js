@@ -3,8 +3,6 @@ import CategorySlider from "@/components/Sliders/CategorySlider";
 import GameCategory from "@/components/GameCategory";
 import { getGameCategories, getGamesByCategoryId, getGamesBySelectedCategories } from "@/lib/gameQueries";
 
-export const dynamic = "force-dynamic";
-
 export default async function Home() {
   // const allCategoreis = await getGameCategories();
   // const category = await getGamesByCategoryId(1);
