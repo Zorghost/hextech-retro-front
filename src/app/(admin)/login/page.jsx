@@ -1,10 +1,15 @@
 import { signIn, signOut } from "@/app/auth";
+import { redirect } from "next/navigation";
 import { auth } from "@/app/auth";
 import Link from "next/link";
 import Image from "next/image";
 
-export default async function Page() {
+export default async function Page({ searchParams }) {
   const session = await auth();
+  const errorMessage =
+    typeof searchParams?.error === "string" && searchParams.error.length > 0
+      ? searchParams.error
+      : null;
 
   return (
     <section className="bg-dark">
@@ -28,6 +33,12 @@ export default async function Page() {
               Sign in to your account
             </h1>
 
+            {errorMessage ? (
+              <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700 border border-red-200">
+                {errorMessage}
+              </div>
+            ) : null}
+
             <form className="flex flex-col gap-4"
               action={async (formData) => {
                 "use server";
@@ -35,16 +46,20 @@ export default async function Page() {
                 let password = formData.get("password");
 
                 try {
-                  await signIn("credentials", {
-                    redirectTo: "/dashboard",
+                  const result = await signIn("credentials", {
+                    redirect: false,
                     email: email,
                     password: password,
                   });
+
+                  if (result?.error) {
+                    redirect(`/login?error=${encodeURIComponent(result.error)}`);
+                  }
                 } catch (error) {
-                  return {
-                    error: error.message || "An unknown error occured.",
-                  };
+                  redirect(`/login?error=${encodeURIComponent(error.message || "Login failed")}`);
                 }
+
+                redirect("/dashboard");
               }}
             >
 
