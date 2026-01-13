@@ -4,6 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { compare } from "bcryptjs";
  
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  // Self-hosted deployments (Docker / reverse proxies) must explicitly trust the host.
+  // This prevents UntrustedHost errors when hitting /api/auth/session.
+  trustHost: true,
+  secret: process.env.AUTH_SECRET,
   providers: [
     Credentials({
       credentials: {

@@ -1,5 +1,4 @@
 import { signIn, signOut } from "@/app/auth";
-import { redirect } from "next/navigation";
 import { auth } from "@/app/auth";
 import Link from "next/link";
 import Image from "next/image";
@@ -36,23 +35,16 @@ export default async function Page() {
                 let password = formData.get("password");
 
                 try {
-                  const result = await signIn("credentials", {
-                    redirect: false,
-                    //redirectTo: "/dashboard"
+                  await signIn("credentials", {
+                    redirectTo: "/dashboard",
                     email: email,
                     password: password,
                   });
-
-                  if (result?.error) {
-                    return { error: result.error };
-                  }
                 } catch (error) {
                   return {
                     error: error.message || "An unknown error occured.",
                   };
                 }
-
-                redirect("/dashboard");
               }}
             >
 
