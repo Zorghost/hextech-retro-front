@@ -43,6 +43,22 @@ export async function getTotalGamesCount() {
   return await prisma.game.count();
 }
 
+export async function getGameCounts() {
+  const [totalGames, publishedGames, unpublishedGames, totalCategories] = await Promise.all([
+    prisma.game.count(),
+    prisma.game.count({ where: { published: true } }),
+    prisma.game.count({ where: { published: false } }),
+    prisma.category.count(),
+  ]);
+
+  return {
+    totalGames,
+    publishedGames,
+    unpublishedGames,
+    totalCategories,
+  };
+}
+
 export async function getGamesPage({ page = 1, pageSize = 24, query, categoryId, published } = {}) {
   const safePage = Number.isFinite(page) && page > 0 ? page : 1;
   const safePageSize = Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 24;

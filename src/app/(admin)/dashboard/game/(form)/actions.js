@@ -1,6 +1,8 @@
 "use server";
 import { prisma } from "@/lib/prisma";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { randomUUID } from "crypto";
+import path from "path";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/adminAuth";
@@ -15,6 +17,121 @@ function isNonEmptyString(value) {
 
 function isValidUploadFile(value) {
   return value && value instanceof File && value.name && value.size > 0;
+}
+
+function parsePositiveIntEnv(name, fallbackValue) {
+  const raw = process.env[name];
+  if (!isNonEmptyString(raw)) return fallbackValue;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallbackValue;
+}
+
+const MAX_THUMBNAIL_BYTES = parsePositiveIntEnv("NEXT_MAX_THUMBNAIL_BYTES", 10 * 1024 * 1024); // 10MB
+const MAX_ROM_BYTES = parsePositiveIntEnv("NEXT_MAX_ROM_BYTES", 256 * 1024 * 1024); // 256MB
+
+const ALLOWED_THUMBNAIL_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"]);
+// Broad but explicit allowlist; expand as needed for your EmulatorJS cores.
+const ALLOWED_ROM_EXTENSIONS = new Set([
+  ".zip",
+  ".7z",
+  ".nes",
+  ".sfc",
+  ".smc",
+  ".gba",
+  ".gb",
+  ".gbc",
+  ".gen",
+  ".md",
+  ".sms",
+  ".gg",
+  ".pce",
+  ".sgx",
+  ".n64",
+  ".z64",
+  ".v64",
+  ".bin",
+  ".cue",
+  ".iso",
+  ".chd",
+]);
+
+function assertSafeOriginalFilename(originalName) {
+  if (!isNonEmptyString(originalName)) throw new Error("Invalid filename.");
+  // Disallow path separators and traversal patterns.
+  if (originalName.includes("/") || originalName.includes("\\")) {
+    throw new Error("Invalid filename. Remove path separators.");
+  }
+  if (originalName.includes("..")) {
+    throw new Error("Invalid filename. Remove '..' sequences.");
+  }
+  if (originalName.includes("\u0000")) {
+    throw new Error("Invalid filename.");
+  }
+}
+
+function getLowerExtension(filename) {
+  const ext = path.extname(String(filename || "")).toLowerCase();
+  return ext;
+}
+
+function generateUniqueFilename(originalName, allowedExtensions) {
+  assertSafeOriginalFilename(originalName);
+  const ext = getLowerExtension(originalName);
+  if (!ext || ext === ".") {
+    throw new Error("File extension is required.");
+  }
+  if (allowedExtensions && !allowedExtensions.has(ext)) {
+    throw new Error(`Unsupported file extension: ${ext}`);
+  }
+  return `${randomUUID()}${ext}`;
+}
+
+async function deleteS3ObjectIfSafe(prefix, filename, allowedExtensions) {
+  if (!isNonEmptyString(prefix) || !isNonEmptyString(filename)) return;
+
+  try {
+    assertSafeOriginalFilename(filename);
+  } catch {
+    // If legacy data contains weird names, don't risk deleting unintended keys.
+    return;
+  }
+
+  const ext = getLowerExtension(filename);
+  if (allowedExtensions && (!ext || !allowedExtensions.has(ext))) {
+    return;
+  }
+
+  const objectKey = `${prefix}/${filename}`;
+  try {
+    assertS3Configured();
+    await s3Client.send(
+      new DeleteObjectCommand({
+        Bucket: s3Bucket,
+        Key: objectKey,
+      }),
+    );
+    console.log("Deleted old object", { key: objectKey });
+  } catch (error) {
+    // Best-effort cleanup.
+    console.error("Failed to delete old object", { key: objectKey, message: error?.message });
+  }
+}
+
+function revalidateGamePages({ slug, oldSlug, id }) {
+  revalidatePath("/");
+  revalidatePath("/dashboard");
+
+  if (Number.isFinite(id)) {
+    revalidatePath(`/dashboard/game/${id}`);
+  }
+
+  if (isNonEmptyString(oldSlug)) {
+    revalidatePath(`/game/${oldSlug.trim()}`);
+  }
+
+  if (isNonEmptyString(slug)) {
+    revalidatePath(`/game/${slug.trim()}`);
+  }
 }
 
 export async function createGame(prevState, formData) {
@@ -33,6 +150,14 @@ export async function createGame(prevState, formData) {
     const parsedId = id ? parseInt(id, 10) : null;
     const parsedCategoryId = categoryId ? parseInt(categoryId, 10) : null;
 
+    if (id && !Number.isFinite(parsedId)) {
+      return {
+        status: "error",
+        message: "Invalid game ID.",
+        color: "red",
+      };
+    }
+
     if (!Number.isFinite(parsedCategoryId)) {
       return {
         status: "error",
@@ -41,7 +166,14 @@ export async function createGame(prevState, formData) {
       };
     }
 
+    let existingGameRecord = null;
+
     if (id) {
+      existingGameRecord = await prisma.game.findUnique({
+        where: { id: parsedId },
+        select: { slug: true, image: true, game_url: true },
+      });
+
       const existingGame = await prisma.game.findFirst({
         where: {
           slug: slug,
@@ -51,7 +183,6 @@ export async function createGame(prevState, formData) {
       });
 
       if (existingGame) {
-        revalidatePath("/");
         return {
           status: "error",
           message: "Slug already exists. Please choose a different slug.",
@@ -71,24 +202,58 @@ export async function createGame(prevState, formData) {
     };
 
 
+    const uploadedObjectKeys = [];
+
     if (id) {
-      // Upload first so DB doesn't point at missing objects.
-      if (isValidUploadFile(thumbnailFile)) {
-        await uploadThumbnail(thumbnailFile);
-        gameData.image = thumbnailFile.name;
+      try {
+        const previousThumbnail = existingGameRecord?.image;
+        const previousRom = existingGameRecord?.game_url;
+
+        // Upload first so DB doesn't point at missing objects.
+        if (isValidUploadFile(thumbnailFile)) {
+          const uploaded = await uploadThumbnail(thumbnailFile);
+          if (uploaded) {
+            uploadedObjectKeys.push(uploaded.objectKey);
+            gameData.image = uploaded.filename;
+          }
+        }
+
+        if (isValidUploadFile(gameFile)) {
+          const uploaded = await uploadGame(gameFile);
+          if (uploaded) {
+            uploadedObjectKeys.push(uploaded.objectKey);
+            gameData.game_url = uploaded.filename;
+          }
+        }
+
+        // update the game
+        await prisma.game.update({
+          where: { id: parsedId },
+          data: gameData
+        });
+
+        // Only after the DB write succeeds, delete replaced assets.
+        if (isNonEmptyString(previousThumbnail) && isNonEmptyString(gameData.image)) {
+          if (previousThumbnail !== gameData.image) {
+            await deleteS3ObjectIfSafe("thumbnail", previousThumbnail, ALLOWED_THUMBNAIL_EXTENSIONS);
+          }
+        }
+
+        if (isNonEmptyString(previousRom) && isNonEmptyString(gameData.game_url)) {
+          if (previousRom !== gameData.game_url) {
+            await deleteS3ObjectIfSafe("rom", previousRom, ALLOWED_ROM_EXTENSIONS);
+          }
+        }
+      } catch (error) {
+        await cleanupUploadedS3Objects(uploadedObjectKeys);
+        throw error;
       }
 
-      if (isValidUploadFile(gameFile)) {
-        await uploadGame(gameFile);
-        gameData.game_url = gameFile.name;
-      }
-
-      // update the game
-      await prisma.game.update({
-        where: { id: parsedId },
-        data: gameData
+      revalidateGamePages({
+        id: parsedId,
+        slug,
+        oldSlug: existingGameRecord?.slug,
       });
-      revalidatePath("/");
 
       return {
         status: "success",
@@ -106,7 +271,6 @@ export async function createGame(prevState, formData) {
       });
 
       if (existingGame) {
-        revalidatePath("/");
         return {
           status: "error",
           message: "Slug already exists. Please choose a different slug.",
@@ -131,17 +295,33 @@ export async function createGame(prevState, formData) {
         };
       }
 
-      // Upload first so DB doesn't point at missing objects.
-      await uploadThumbnail(thumbnailFile);
-      await uploadGame(gameFile);
+      let created;
+      try {
+        // Upload first so DB doesn't point at missing objects.
+        const uploadedThumbnail = await uploadThumbnail(thumbnailFile);
+        const uploadedRom = await uploadGame(gameFile);
 
-      gameData.image = thumbnailFile.name;
-      gameData.game_url = gameFile.name;
+        if (uploadedThumbnail) {
+          uploadedObjectKeys.push(uploadedThumbnail.objectKey);
+          gameData.image = uploadedThumbnail.filename;
+        }
 
-      // Create new game
-      await prisma.game.create({ data: gameData });
+        if (uploadedRom) {
+          uploadedObjectKeys.push(uploadedRom.objectKey);
+          gameData.game_url = uploadedRom.filename;
+        }
 
-      revalidatePath("/");
+        // Create new game
+        created = await prisma.game.create({
+          data: gameData,
+          select: { id: true, slug: true },
+        });
+      } catch (error) {
+        await cleanupUploadedS3Objects(uploadedObjectKeys);
+        throw error;
+      }
+
+      revalidateGamePages({ id: created?.id, slug: created?.slug });
       return {
         status: "success",
         message: "Game has been added.",
@@ -155,7 +335,6 @@ export async function createGame(prevState, formData) {
       color: "green",
     };
   } catch (error) {
-    revalidatePath("/");
     return {
       status: "error",
       message: error.message,
@@ -164,17 +343,34 @@ export async function createGame(prevState, formData) {
   }
 }
 
-
 async function uploadGame(gameFile) {
-  if (!isValidUploadFile(gameFile)) return;
+  if (!isValidUploadFile(gameFile)) return null;
+  assertSafeOriginalFilename(gameFile.name);
+  if (gameFile.size > MAX_ROM_BYTES) {
+    throw new Error(`Game file is too large. Max allowed: ${MAX_ROM_BYTES} bytes.`);
+  }
+
+  const filename = generateUniqueFilename(gameFile.name, ALLOWED_ROM_EXTENSIONS);
+  const objectKey = `rom/${filename}`;
+
   const buffer = Buffer.from(await gameFile.arrayBuffer());
-  await uploadFileToS3(buffer, `rom/${gameFile.name}`, gameFile.type)
+  await uploadFileToS3(buffer, objectKey, gameFile.type);
+  return { filename, objectKey };
 }
 
 async function uploadThumbnail(thumbnailFile) {
-  if (!isValidUploadFile(thumbnailFile)) return;
+  if (!isValidUploadFile(thumbnailFile)) return null;
+  assertSafeOriginalFilename(thumbnailFile.name);
+  if (thumbnailFile.size > MAX_THUMBNAIL_BYTES) {
+    throw new Error(`Thumbnail is too large. Max allowed: ${MAX_THUMBNAIL_BYTES} bytes.`);
+  }
+
+  const filename = generateUniqueFilename(thumbnailFile.name, ALLOWED_THUMBNAIL_EXTENSIONS);
+  const objectKey = `thumbnail/${filename}`;
+
   const buffer = Buffer.from(await thumbnailFile.arrayBuffer());
-  await uploadFileToS3(buffer, `thumbnail/${thumbnailFile.name}`, thumbnailFile.type)
+  await uploadFileToS3(buffer, objectKey, thumbnailFile.type);
+  return { filename, objectKey };
 }
 
 const s3Region = getEnv("NEXT_S3_REGION", "NEXT_AWS_S3_REGION");
@@ -237,6 +433,35 @@ async function uploadFileToS3(file, filename, contentType) {
   return filename
 }
 
+async function cleanupUploadedS3Objects(objectKeys) {
+  const keys = Array.isArray(objectKeys) ? objectKeys.filter(Boolean) : [];
+  if (keys.length === 0) return;
+
+  try {
+    assertS3Configured();
+  } catch {
+    // If S3 isn't configured, there's nothing we can do.
+    return;
+  }
+
+  await Promise.all(
+    keys.map(async (Key) => {
+      try {
+        await s3Client.send(
+          new DeleteObjectCommand({
+            Bucket: s3Bucket,
+            Key,
+          }),
+        );
+        console.log("Cleaned up uploaded object", { key: Key });
+      } catch (error) {
+        // Best-effort cleanup; don't mask the original DB error.
+        console.error("Failed to cleanup uploaded object", { key: Key, message: error?.message });
+      }
+    }),
+  );
+}
+
 export async function deleteFormAction(formData) {
   await requireAdmin();
   // delete logic here
@@ -249,9 +474,17 @@ export async function deleteFormAction(formData) {
     throw new Error("Game ID is missing.");
   }
 
+  const parsedId = parseInt(id, 10);
+  const existing = await prisma.game.findUnique({
+    where: { id: parsedId },
+    select: { slug: true },
+  });
+
   await prisma.game.delete({
-    where: { id: parseInt(id, 10) }
-  })
+    where: { id: parsedId }
+  });
+
+  revalidateGamePages({ id: parsedId, oldSlug: existing?.slug });
 
   redirect("/dashboard");
 }

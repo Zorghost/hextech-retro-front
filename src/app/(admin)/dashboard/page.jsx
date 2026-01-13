@@ -1,5 +1,5 @@
 import Header from "@/components/Admin/Header"
-import { getGameCategories, getGamesPage, getTotalGamesCount } from "@/lib/adminQueries"
+import { getGameCategories, getGameCounts, getGamesPage } from "@/lib/adminQueries"
 import Image from "next/image";
 import Link from "next/link";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
@@ -55,10 +55,10 @@ export default async function Page({ searchParams }) {
   const page = parseInt((toSingle(searchParams?.page) ?? "1").toString(), 10);
   const pageSize = 24;
 
-  const [gamesPage, categories, totalGamesCount] = await Promise.all([
+  const [gamesPage, categories, counts] = await Promise.all([
     getGamesPage({ page, pageSize, query: q, categoryId: category, published }),
     getGameCategories(),
-    getTotalGamesCount(),
+    getGameCounts(),
   ]);
 
   const startIndex = gamesPage.total === 0 ? 0 : (gamesPage.page - 1) * gamesPage.pageSize + 1;
@@ -81,18 +81,22 @@ export default async function Page({ searchParams }) {
 
       <div className="container mx-auto mb-8 px-4 min-h-[50rem] pb-8 relative mt-10">
 
-        <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div className="flex flex-col gap-2 justify-center text-center border border-accent rounded-md p-4">
-            <b className="text-xl">{totalGamesCount}</b>
+            <b className="text-xl">{counts.totalGames}</b>
             <p className="text-sm">Total Games</p>
           </div>
           <div className="flex flex-col gap-2 justify-center text-center border border-accent rounded-md p-4">
-            <b className="text-xl">{categories.length}</b>
-            <p className="text-sm">Total Categories</p>
+            <b className="text-xl">{counts.publishedGames}</b>
+            <p className="text-sm">Published Games</p>
           </div>
           <div className="flex flex-col gap-2 justify-center text-center border border-accent rounded-md p-4">
-            <b className="text-xl">#</b>
-            <p className="text-sm">More Stats</p>
+            <b className="text-xl">{counts.unpublishedGames}</b>
+            <p className="text-sm">Unpublished Games</p>
+          </div>
+          <div className="flex flex-col gap-2 justify-center text-center border border-accent rounded-md p-4">
+            <b className="text-xl">{counts.totalCategories}</b>
+            <p className="text-sm">Total Categories</p>
           </div>
         </div>
 
