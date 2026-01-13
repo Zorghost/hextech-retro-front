@@ -39,6 +39,10 @@ NEXT_PUBLIC_CATEGORY_IMAGE_BASE_URL=https://<space>.<region>.cdn.digitaloceanspa
 # images through the Next.js app using your server-side Spaces credentials.
 # This avoids Next Image Optimization failing with "upstream response is invalid".
 NEXT_PUBLIC_IMAGE_SOURCE=proxy
+
+# Google Analytics (GA4)
+# Optional override; defaults to the built-in measurement ID if unset.
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-YQXYSJGK8L
 ```
 
 Notes:
