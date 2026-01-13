@@ -1,6 +1,7 @@
 import Header from "@/components/Admin/Header"
 import { getGameById, getGameCategories } from "@/lib/adminQueries";
 import GameForm from "@/app/(admin)/dashboard/game/(form)/form";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default async function Page({params}) {
   const gameId = params.slug;
@@ -25,7 +26,22 @@ export default async function Page({params}) {
           </a>
         </div>
 
-        <GameForm categories={categories} game={gameData} />
+        {!gameData ? (
+          <EmptyState
+            title="Game not found"
+            description="This game may have been deleted or the ID is invalid."
+            action={
+              <a
+                href="/dashboard"
+                className="inline-flex items-center justify-center rounded-[24px] border border-accent px-5 py-3 text-base font-medium"
+              >
+                Back to dashboard
+              </a>
+            }
+          />
+        ) : (
+          <GameForm categories={categories} game={gameData} />
+        )}
 
       </div>
     

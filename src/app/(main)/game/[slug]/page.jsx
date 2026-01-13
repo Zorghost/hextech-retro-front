@@ -6,6 +6,7 @@ import { getGameThumbnailUrl, getRomUrlWithBase } from "@/lib/assetUrls";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { notFound } from "next/navigation";
 import Script from "next/script";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export async function generateMetadata({ params }) {
   const game = await getGameBySlug(params.slug);
@@ -132,7 +133,15 @@ export default async function Page({ params }) {
       <GameEmulator game={game} romUrl={romUrl} />
 
       <div className="mt-8">
-        <Suspense fallback={<p>Loading game...</p>}>
+        <Suspense
+          fallback={
+            <div className="rounded-xl border border-accent-secondary bg-main p-4">
+              <Skeleton className="h-6 w-40 mb-3" />
+              <Skeleton className="h-4 w-full mb-2" />
+              <Skeleton className="h-4 w-5/6" />
+            </div>
+          }
+        >
           <Disqus
             url={`${process.env.NEXT_WEBSITE_URL}/game/${game?.slug}`}
             identifier={game?.id}

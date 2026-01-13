@@ -2,6 +2,7 @@ import { getCategoryBySlug, getGamesByCategory } from "@/lib/gameQueries";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 import Image from "next/image";
+import EmptyState from "@/components/ui/EmptyState";
 
 const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
 
@@ -55,7 +56,20 @@ export default async function Page({ params, searchParams }) {
 
       <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4'>
         {games.length === 0 ? (
-          <p>No results.</p>
+          <div className="col-span-full">
+            <EmptyState
+              title="No games in this category"
+              description="Try another category, or check back later."
+              action={
+                <a
+                  href="/category"
+                  className="inline-flex items-center justify-center rounded-[24px] border border-accent px-5 py-3 text-base font-medium"
+                >
+                  Browse categories
+                </a>
+              }
+            />
+          </div>
         ) : (
           games.map((game) => (
             <a href={`/game/${game.slug}`} key={game.id} className='group'>
