@@ -19,11 +19,14 @@ export default async function Page({params}) {
         <a href="/dashboard" className="text-sm">&#8592; Back</a>
         <div className="flex justify-between gap-4 mb-4">
           <h1 className="font-display">Update Game</h1>
-          <a href={`/game/slug-of-the-game`}
-            className="text-sm border border-accent py-2 px-3 rounded-xl"
-          >
-            View Game &rarr;
-          </a>
+          {gameData?.slug && (
+            <a
+              href={`/game/${gameData.slug}`}
+              className="text-sm border border-accent py-2 px-3 rounded-xl"
+            >
+              View Game &rarr;
+            </a>
+          )}
         </div>
 
         {!gameData ? (

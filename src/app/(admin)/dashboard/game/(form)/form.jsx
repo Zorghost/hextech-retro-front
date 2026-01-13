@@ -167,12 +167,12 @@ export default function GameForm({categories, game}) {
               required
               className="bg-black border border-accent sm:text-sm rounded-lg focus:ring-primary-600
               block w-full p-2 mb-4"
-              defaultValue={game?.categories[0].id}
+              defaultValue={game?.categories?.[0]?.id ?? ""}
             >
             
             {categories?.map((category) => (
               <option key={category.id} value={category.id}>
-                {category?.id === game?.categories[0].id ? game?.categories[0].title : category?.title}
+                {category?.title}
               </option> 
             ))}
 

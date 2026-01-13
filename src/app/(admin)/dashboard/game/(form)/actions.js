@@ -30,13 +30,43 @@ export async function createGame(prevState, formData) {
     const thumbnailFile = formData.get("thumbnailFile");
     const gameFile = formData.get("gameFile");
 
+    const parsedId = id ? parseInt(id, 10) : null;
+    const parsedCategoryId = categoryId ? parseInt(categoryId, 10) : null;
+
+    if (!Number.isFinite(parsedCategoryId)) {
+      return {
+        status: "error",
+        message: "Category is required.",
+        color: "red",
+      };
+    }
+
+    if (id) {
+      const existingGame = await prisma.game.findFirst({
+        where: {
+          slug: slug,
+          NOT: { id: parsedId },
+        },
+        select: { id: true },
+      });
+
+      if (existingGame) {
+        revalidatePath("/");
+        return {
+          status: "error",
+          message: "Slug already exists. Please choose a different slug.",
+          color: "red",
+        };
+      }
+    }
+
     const gameData = {
       title,
       slug,
       description,
-      categories: {
-        connect: { id: parseInt(categoryId, 10) },
-      },
+      categories: id
+        ? { set: [{ id: parsedCategoryId }] }
+        : { connect: { id: parsedCategoryId } },
       published
     };
 
@@ -55,7 +85,7 @@ export async function createGame(prevState, formData) {
 
       // update the game
       await prisma.game.update({
-        where: { id: parseInt(id, 10) },
+        where: { id: parsedId },
         data: gameData
       });
       revalidatePath("/");
