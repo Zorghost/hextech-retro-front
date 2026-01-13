@@ -37,10 +37,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           throw new Error("Invalid user.")
         }
 
-        if ((user.role ?? "").toLowerCase() !== "admin") {
-          throw new Error("Not authorized.")
-        }
-
         const isPasswordValid = await compare(
           password,
           user.password
@@ -51,28 +47,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         return {
-          id: String(user.id),
+          id: user.id,
           name: user.name,
-          email: user.email,
-          role: user.role
+          email: user.email
         }
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = user.role;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session?.user) {
-        session.user.id = token.sub;
-        session.user.role = token.role;
-      }
-      return session;
-    },
     authorized: async ({ auth }) => {
       // Logged in users are authenticated, otherwise redirect to login page
       return !!auth
