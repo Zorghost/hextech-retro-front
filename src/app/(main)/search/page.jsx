@@ -59,7 +59,7 @@ export default async function Page(req) {
               <li key={game.id} className="mb-2">
                 <a
                   href={`/game/${game.slug}`}
-                  className="flex ga-4 bg-main hover:bg-accent-secondary p-4 rounded-lg gap-4"
+                  className="flex bg-main hover:bg-accent-secondary p-4 rounded-lg gap-4"
                 >
                   <Image
                     src={getGameThumbnailUrl(game.image)}

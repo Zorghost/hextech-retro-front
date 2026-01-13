@@ -13,7 +13,12 @@ export default function Search() {
 
   const handleSearch = (event) => {
     event.preventDefault();
-    router.push(`/search?q=${searchTerm}`)
+    const trimmed = typeof searchTerm === "string" ? searchTerm.trim() : "";
+    if (!trimmed) {
+      router.push("/search");
+      return;
+    }
+    router.push(`/search?q=${encodeURIComponent(trimmed)}`);
   }
 
   return ( 

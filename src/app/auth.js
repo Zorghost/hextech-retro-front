@@ -48,12 +48,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return {
           id: user.id,
           name: user.name,
-          email: user.email
+          email: user.email,
+          role: user.role
         }
       },
     }),
   ],
   callbacks: {
+    jwt: async ({ token, user }) => {
+      if (user) {
+        token.id = user.id;
+        token.role = user.role ?? null;
+      }
+      return token;
+    },
+    session: async ({ session, token }) => {
+      if (session?.user) {
+        session.user.id = token.id;
+        session.user.role = token.role;
+      }
+      return session;
+    },
     authorized: async ({ auth }) => {
       // Logged in users are authenticated, otherwise redirect to login page
       return !!auth

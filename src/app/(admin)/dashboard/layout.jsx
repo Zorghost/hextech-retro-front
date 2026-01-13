@@ -1,10 +1,8 @@
-import { auth } from "@/app/auth";
-import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardLayout({ children }) {
-  const session = await auth();
-  if (!session) redirect("/login");
+  await requireAdmin();
   return <div>{children}</div>;
 }

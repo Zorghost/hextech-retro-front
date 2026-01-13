@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/adminAuth";
 
 function getEnv(name, fallbackName) {
   return process.env[name] ?? (fallbackName ? process.env[fallbackName] : undefined);
@@ -18,6 +19,7 @@ function isValidUploadFile(value) {
 
 export async function createGame(prevState, formData) {
   try {
+    await requireAdmin();
     // Grab ID to update
     const id = formData.get("gameId");
     const title = formData.get("title");
@@ -206,6 +208,7 @@ async function uploadFileToS3(file, filename, contentType) {
 }
 
 export async function deleteFormAction(formData) {
+  await requireAdmin();
   // delete logic here
   if(!formData) {
     throw new Error("No form data received.");
