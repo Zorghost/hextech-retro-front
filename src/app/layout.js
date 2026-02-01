@@ -19,25 +19,28 @@ const DeltaHeadingFont = Dela_Gothic_One({
 export const metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: {
-    default: "The Next Game Platform",
-    template: "%s | The Next Game Platform",
+    default: "Retro Hextech — Classic Games Online (SNES, N64, Sega, Atari)",
+    template: "%s | Retro Hextech",
   },
-  description: "Retro gaming platform.",
+  description:
+    "Play classic retro games online for free — browse our Atari, SNES, Sega and Nintendo collections.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
     type: "website",
     url: "/",
-    siteName: "The Next Game Platform",
-    title: "The Next Game Platform",
-    description: "Retro gaming platform.",
+    siteName: "Retro Hextech",
+    title: "Retro Hextech — Classic Games Online (SNES, N64, Sega, Atari)",
+    description:
+      "Play classic retro games online for free — browse our Atari, SNES, Sega and Nintendo collections.",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "The Next Game Platform",
-    description: "Retro gaming platform.",
+    title: "Retro Hextech — Classic Games Online (SNES, N64, Sega, Atari)",
+    description:
+      "Play classic retro games online for free — browse our Atari, SNES, Sega and Nintendo collections.",
   },
   robots: {
     index: true,

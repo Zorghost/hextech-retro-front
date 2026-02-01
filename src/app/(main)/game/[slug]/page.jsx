@@ -12,6 +12,8 @@ import { Skeleton } from "@/components/ui/Skeleton";
 export async function generateMetadata({ params }) {
   const game = await getGameBySlug(params.slug);
   const siteUrl = getSiteUrl();
+  const defaultDescription =
+    "Play classic retro games online for free — browse our Atari, SNES, Sega and Nintendo collections.";
 
   if (!game) {
     return {
@@ -23,10 +25,8 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  const title = game.title
-    ? `${game.title} | The Next Game Platform`
-    : "The Next Game Platform Retro Game";
-  const description = game.description || "Discover the best free Retro Games";
+  const title = game.title || "Retro game";
+  const description = game.description || defaultDescription;
 
   const canonical = `${siteUrl}/game/${game.slug}`;
   const rawImageUrl = game.image ? getGameThumbnailUrl(game.image) : undefined;
