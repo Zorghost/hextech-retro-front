@@ -1,6 +1,7 @@
 import { Inter, Dela_Gothic_One } from "next/font/google";
 import "./globals.css";
 import { getSiteUrl } from "@/lib/siteUrl";
+import { getPublicAssetUrl } from "@/lib/assetUrls";
 import Script from "next/script";
 import { Suspense } from "react";
 import { GoogleAnalyticsRouteTracker } from "@/components/analytics/google-analytics";
@@ -37,7 +38,7 @@ export const metadata = {
     locale: "en_US",
     images: [
       {
-        url: "/slide/slide-1.png",
+        url: getPublicAssetUrl("/slide/slide-1.png"),
         alt: "Retro Hextech — Classic Games Online",
       },
     ],
@@ -49,7 +50,7 @@ export const metadata = {
       "Play classic retro games online for free — browse our Atari, SNES, Sega and Nintendo collections.",
     images: [
       {
-        url: "/slide/slide-1.png",
+        url: getPublicAssetUrl("/slide/slide-1.png"),
         alt: "Retro Hextech — Classic Games Online",
       },
     ],

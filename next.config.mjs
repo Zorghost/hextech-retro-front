@@ -23,8 +23,19 @@ for (const envName of [
   if (hostname) remoteHostnames.add(hostname);
 }
 
+const assetVersion =
+  process.env.NEXT_PUBLIC_ASSET_VERSION ||
+  process.env.VERCEL_GIT_COMMIT_SHA ||
+  process.env.GITHUB_SHA ||
+  null;
+
 const nextConfig = {
+  env: assetVersion ? { NEXT_PUBLIC_ASSET_VERSION: assetVersion } : {},
   images: {
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 31536000,
+    deviceSizes: [360, 640, 768, 1024, 1280, 1536, 1920],
+    imageSizes: [16, 24, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: Array.from(remoteHostnames).map((hostname) => ({
       protocol: "https",
       hostname,
@@ -49,7 +60,43 @@ const nextConfig = {
         : null,
     ].filter(Boolean);
 
+    /** @type {import('next').Header[]} */
+    const longCacheHeaders = [
+      {
+        key: "Cache-Control",
+        value: "public, max-age=31536000, immutable",
+      },
+    ];
+
     return [
+      {
+        source: "/_next/static/:path*",
+        headers: [...baseHeaders, ...longCacheHeaders],
+      },
+      {
+        source: "/icons/:path*",
+        headers: [...baseHeaders, ...longCacheHeaders],
+      },
+      {
+        source: "/category/:path*",
+        headers: [...baseHeaders, ...longCacheHeaders],
+      },
+      {
+        source: "/game/:path*",
+        headers: [...baseHeaders, ...longCacheHeaders],
+      },
+      {
+        source: "/page/:path*",
+        headers: [...baseHeaders, ...longCacheHeaders],
+      },
+      {
+        source: "/slide/:path*",
+        headers: [...baseHeaders, ...longCacheHeaders],
+      },
+      {
+        source: "/favicon.ico",
+        headers: [...baseHeaders, ...longCacheHeaders],
+      },
       {
         source: "/(.*)",
         headers: baseHeaders,

@@ -1,6 +1,9 @@
 import { getGameCategories } from "@/lib/gameQueries"
 import EmptyState from "@/components/ui/EmptyState";
 import Image from "next/image";
+import { getCategoryImageUrl } from "@/lib/assetUrls";
+
+const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
 
 export default async function Page() {
   const categories = await getGameCategories();
@@ -25,13 +28,14 @@ export default async function Page() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-6">
         {categories.map((game) => (
           <a href={`/category/${game.slug}`} key={game.id} className="group">
-            <div className="overflow-hidden rounded-lg border-accent-secondary border">
+            <div className="relative w-full aspect-square overflow-hidden rounded-lg border-accent-secondary border">
               <Image
-                src={`/category/${game.image}`}
-                width={300}
-                height={300}
+                src={getCategoryImageUrl(game.image)}
                 alt={game.title}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                fill
+                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 180px"
+                unoptimized={isProxyImageSource}
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
               />
             </div>
             <h1>{game.title}</h1>
