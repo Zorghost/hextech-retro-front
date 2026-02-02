@@ -132,11 +132,9 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
   }, [core, gameUrl, cleanupScriptsOnUnmount]);
 
   return (
-    <div className="rounded-xl border border-accent-secondary bg-main p-4">
-      <div className="w-full max-w-[640px] mx-auto">
-        <div className="w-full aspect-[4/3]">
-          <div id="game" ref={containerRef} className="w-full h-full" />
-        </div>
+    <div className="bg-main flex justify-center rounded-xl">
+      <div style={{ width: "640px", height: "480px", maxWidth: "100%" }}>
+        <div id="game" ref={containerRef} />
       </div>
     </div>
   );

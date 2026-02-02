@@ -1,3 +1,9 @@
+"use client";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Pagination, Scrollbar, A11y } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import { getCategoryImageUrl } from "@/lib/assetUrls";
@@ -5,7 +11,17 @@ import { getCategoryImageUrl } from "@/lib/assetUrls";
 const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
 
 export default function CategorySlider({ categories }) {
-  if (!Array.isArray(categories) || categories.length === 0) return null;
+  const breakpoints = {
+    320: {
+      slidesPerView: 3,
+    },
+    640: {
+      slidesPerView: 4,
+    },
+    768: {
+      slidesPerView: 6,
+    },
+  };
 
   return (
     <div className="mb-6">
@@ -20,30 +36,43 @@ export default function CategorySlider({ categories }) {
         </a>
       </div>
 
-      <div
-        className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory"
-        aria-label="Game categories"
+      <Swiper
+        modules={[Navigation, Scrollbar, A11y]}
+        spaceBetween={20}
+        slidesPerView={6}
+        breakpoints={breakpoints}
+        navigation
+        scrollbar={{ draggable: true }}
+        style={{
+          "--swiper-pagination-color": "#FFBA08",
+          "--swiper-pagination-bullet-incactive-color": "#999999",
+          "--swiper-pagination-bullet-incactive-opacity": "1",
+          "--swiper-pagination-bullet-size": "0.6em",
+          "--swiper-pagination-bullet-horizontal-gap": "6px",
+          "--swiper-theme-color": "#FFF",
+          "--swiper-navigation-size": "24px",
+          "--swiper-navigation-sides-offset": "30px",
+        }}
       >
-        {categories.map((item) => (
-          <a
-            key={item?.id ?? item?.slug}
-            href={`/category/${item.slug}`}
-            className="group flex-none w-28 sm:w-32 md:w-36 snap-start"
-          >
-            <div className="relative w-full aspect-square overflow-hidden rounded-lg border-accent-secondary border mb-2 bg-main">
-              <Image
-                src={getCategoryImageUrl(item.image)}
-                alt={item.title}
-                fill
-                sizes="(max-width: 640px) 30vw, (max-width: 768px) 22vw, 160px"
-                unoptimized={isProxyImageSource}
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-            </div>
-            <h3 className="font-medium leading-snug">{item.title}</h3>
-          </a>
+        {categories.map((item, i) => (
+          <SwiperSlide key={i} className="group">
+            <a href={`/category/${item.slug}`} className="group">
+              <div className="relative w-full aspect-square overflow-hidden rounded-lg border-accent-secondary border mb-2">
+                <Image
+                  src={getCategoryImageUrl(item.image)}
+                  alt={item.title}
+                  fill
+                  sizes="(max-width: 768px) 33vw, (max-width: 1024px) 16vw, 12vw"
+                  unoptimized={isProxyImageSource}
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
+              <h1>{item.title}</h1>
+              <p>{item.description}</p>
+            </a>
+          </SwiperSlide>
         ))}
-      </div>
+      </Swiper>
     </div>
   );
 }

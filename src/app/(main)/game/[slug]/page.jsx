@@ -1,11 +1,13 @@
 import { getGameBySlug } from "@/lib/gameQueries";
-import LazyGameEmulator from "@/components/LazyGameEmulator";
-import LazyDisqus from "@/components/LazyDisqus";
+import GameEmulator from "@/components/GameEmulator";
+import Disqus from "@/components/Disqus";
+import { Suspense } from "react";
 import { getGameThumbnailUrl, getRomUrlWithBase } from "@/lib/assetUrls";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { safeJsonLdStringify } from "@/lib/jsonLd";
 import { notFound } from "next/navigation";
 import Script from "next/script";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export async function generateMetadata({ params }) {
   const game = await getGameBySlug(params.slug);
@@ -129,10 +131,24 @@ export default async function Page({ params }) {
         </ol>
       </nav>
 
-      <LazyGameEmulator game={game} romUrl={romUrl} />
+      <GameEmulator game={game} romUrl={romUrl} />
 
       <div className="mt-8">
-        <LazyDisqus url={canonical} identifier={game?.id} title={game?.title} />
+        <Suspense
+          fallback={
+            <div className="rounded-xl border border-accent-secondary bg-main p-4">
+              <Skeleton className="h-6 w-40 mb-3" />
+              <Skeleton className="h-4 w-full mb-2" />
+              <Skeleton className="h-4 w-5/6" />
+            </div>
+          }
+        >
+          <Disqus
+            url={canonical}
+            identifier={game?.id}
+            title={game?.title}
+          />
+        </Suspense>
       </div>
     </div>
   );

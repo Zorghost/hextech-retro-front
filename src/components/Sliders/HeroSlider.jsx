@@ -1,30 +1,48 @@
 "use client";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Pagination, Scrollbar, A11y, Autoplay } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
 
-import dynamic from "next/dynamic";
-import Image from "next/image";
-
-function HeroSliderFallback() {
+export default function HeroSlider() {
   return (
-    <div className="h-[340px] md:h-[480px] w-full mb-6 rounded-lg border border-accent-secondary bg-main overflow-hidden">
-      <div className="relative h-full w-full">
-        <Image
-          src="/slide/slide-1.png"
-          alt="Retro games hero banner"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-right"
-        />
-
-        <div className="absolute inset-0 flex items-center px-8 md:px-16">
+    <div>
+      <Swiper
+        modules={[Navigation, Pagination, Scrollbar, A11y, Autoplay]}
+        spaceBetween={50}
+        slidesPerView={1}
+        navigation
+        pagination={{ clickable: true }}
+        scrollbar={{ draggable: true }}
+        autoplay={{ delay: 6000, disableOnInteraction: false, pauseOnMouseEnter: true }}
+        loop
+        className="h-[340px] md:h-[480px] w-full mb-6 rounded-lg border border-accent-secondary bg-main"
+        style={{
+          "--swiper-pagination-color": "#FFBA08",
+          "--swiper-pagination-bullet-incactive-color": "#999999",
+          "--swiper-pagination-bullet-incactive-opacity": "1",
+          "--swiper-pagination-bullet-size": "0.6em",
+          "--swiper-pagination-bullet-horizontal-gap": "6px",
+          "--swiper-theme-color": "#FFF",
+          "--swiper-navigation-size": "24px",
+          "--swiper-navigation-sides-offset": "30px",
+        }}
+      >
+        <SwiperSlide
+          className="bg-[url('/slide/slide-1.png')] bg-no-repeat bg-right px-16 md:p-20 items-center"
+          style={{ display: "flex" }}
+        >
           <div className="max-w-3xl">
-            <div className="text-accent text-sm mb-2 uppercase">Free Arcade Games</div>
+            <div className="text-accent text-sm mb-2 uppercase">
+              Free Arcade Games
+            </div>
             <h1 className="font-display text-2xl md:text-4xl lg:text-6xl mb-4">
               PLAY RETRO GAMES FOR FREE
             </h1>
             <p className="mb-6 max-w-[418px]">
-              Relive the classics! Dive into our collection of retro games and enjoy them for free.
-              Start playing now!
+              Relive the classics! Dive into our collection of retro games and
+              enjoy them for free. Start playing now!
             </p>
             <a
               href="/search?q=mario"
@@ -33,17 +51,30 @@ function HeroSliderFallback() {
               Play Mario
             </a>
           </div>
-        </div>
-      </div>
+        </SwiperSlide>
+
+        <SwiperSlide
+          className="bg-[url('/slide/slide-1.png')] bg-no-repeat bg-right p-20 items-center"
+          style={{ display: "flex" }}
+        >
+          <div className="max-w-3xl">
+            <div className="text-accent text-sm mb-2 uppercase">Just added</div>
+            <h1 className="font-display text-4xl lg:text-6xl mb-4">
+              DISCOVER NEW GAMES
+            </h1>
+            <p className="mb-6 max-w-[418px]">
+              Check out the latest additions to the library — updated regularly
+              as new games get published.
+            </p>
+            <a
+              href="/new-games"
+              className="text-sm bg-accent-gradient py-3 px-6 rounded-xl border border-yellow-400 uppercase"
+            >
+              View New Games
+            </a>
+          </div>
+        </SwiperSlide>
+      </Swiper>
     </div>
   );
-}
-
-const HeroSliderClient = dynamic(() => import("./HeroSliderClient"), {
-  ssr: false,
-  loading: () => <HeroSliderFallback />,
-});
-
-export default function HeroSlider() {
-  return <HeroSliderClient />;
 }
