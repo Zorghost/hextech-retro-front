@@ -1,5 +1,16 @@
 import { prisma } from "@/lib/prisma";
 
+export const metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
+};
+
 const getAllGames = async () => {
   const games = await prisma.game.findMany();
   return games;

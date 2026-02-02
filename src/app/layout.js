@@ -24,23 +24,35 @@ export const metadata = {
   },
   description:
     "Play classic retro games online for free — browse our Atari, SNES, Sega and Nintendo collections.",
-  alternates: {
-    canonical: "/",
+  icons: {
+    icon: [{ url: "/favicon.ico" }, { url: "/icons/favicon.ico" }],
+    shortcut: ["/favicon.ico"],
   },
   openGraph: {
     type: "website",
-    url: "/",
     siteName: "Retro Hextech",
     title: "Retro Hextech — Classic Games Online (SNES, N64, Sega, Atari)",
     description:
       "Play classic retro games online for free — browse our Atari, SNES, Sega and Nintendo collections.",
     locale: "en_US",
+    images: [
+      {
+        url: "/slide/slide-1.png",
+        alt: "Retro Hextech — Classic Games Online",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Retro Hextech — Classic Games Online (SNES, N64, Sega, Atari)",
     description:
       "Play classic retro games online for free — browse our Atari, SNES, Sega and Nintendo collections.",
+    images: [
+      {
+        url: "/slide/slide-1.png",
+        alt: "Retro Hextech — Classic Games Online",
+      },
+    ],
   },
   robots: {
     index: true,
