@@ -25,6 +25,9 @@ export const metadata = {
   },
   description:
     "Play classic retro games online for free — browse our Atari, SNES, Sega and Nintendo collections.",
+  alternates: {
+    canonical: "/",
+  },
   icons: {
     icon: [{ url: "/favicon.ico" }, { url: "/icons/favicon.ico" }],
     shortcut: ["/favicon.ico"],
@@ -32,6 +35,7 @@ export const metadata = {
   openGraph: {
     type: "website",
     siteName: "Retro Hextech",
+    url: "/",
     title: "Retro Hextech — Classic Games Online (SNES, N64, Sega, Atari)",
     description:
       "Play classic retro games online for free — browse our Atari, SNES, Sega and Nintendo collections.",

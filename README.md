@@ -14,6 +14,10 @@ The website can be used locally or you could move all of your assets into an S3 
 Setup your enviroment veraibles:
 ```
 DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DB?sslmode=require
+# Canonical public site origin (important for sitemap, robots, and canonical URLs)
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+# Backwards-compatible alias (still supported):
 NEXT_WEBSITE_URL=http://localhost:3000
 AUTH_SECRET=YourSecretPhrase
 

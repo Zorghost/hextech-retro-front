@@ -1,12 +1,26 @@
 import { getGameCategories, getPublishedGamesForSitemap } from "@/lib/gameQueries";
 import { getSiteUrl } from "@/lib/siteUrl";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
+function getOriginFromRequestHeaders() {
+  const h = headers();
+  const host = h.get("x-forwarded-host") || h.get("host");
+
+  const forwardedProto = h.get("x-forwarded-proto");
+  const proto = (forwardedProto ? forwardedProto.split(",")[0] : null) || "https";
+
+  if (!host) return null;
+  return `${proto}://${host}`;
+}
+
 export default async function sitemap() {
   // IMPORTANT: Sitemap URLs must match the domain that serves the sitemap.
-  // Use the canonical site URL configured in env rather than proxied headers.
-  const siteUrl = getSiteUrl();
+  // Prefer the canonical site URL configured in env; fallback to request headers when unset.
+  const configuredSiteUrl = getSiteUrl();
+  const headerSiteUrl = getOriginFromRequestHeaders();
+  const siteUrl = configuredSiteUrl.includes("localhost") && headerSiteUrl ? headerSiteUrl : configuredSiteUrl;
   const [games, categories] = await Promise.all([
     getPublishedGamesForSitemap(),
     getGameCategories(),
