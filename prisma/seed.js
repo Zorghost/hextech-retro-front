@@ -28,7 +28,7 @@ async function main() {
     {
       id: 4,
       title: "SNES",
-      slug: "nes",
+      slug: "snes",
       image: "super-nintendo.jpg",
       core: "snes",
     },
@@ -52,6 +52,67 @@ async function main() {
       slug: "sega-mega-drive",
       image: "sega.jpg",
       core: "segaMD",
+    },
+
+    // Additional EmulatorJS-supported systems
+    {
+      id: 8,
+      title: "Nintendo (NES)",
+      slug: "nes",
+      image: "placeholder.jpg",
+      core: "nes",
+    },
+    {
+      id: 9,
+      title: "Game Boy",
+      slug: "gameboy",
+      image: "placeholder.jpg",
+      core: "gb",
+    },
+    {
+      id: 10,
+      title: "Game Boy Color",
+      slug: "gameboy-color",
+      image: "placeholder.jpg",
+      // EmulatorJS uses the gb system for both GB and GBC via gambatte/mgba.
+      core: "gb",
+    },
+    {
+      id: 11,
+      title: "Game Boy Advance",
+      slug: "gameboy-advance",
+      image: "placeholder.jpg",
+      core: "gba",
+    },
+    {
+      id: 12,
+      title: "Nintendo DS",
+      slug: "nintendo-ds",
+      image: "placeholder.jpg",
+      // Use a DS core that doesn't require BIOS files by default.
+      core: "desmume",
+    },
+    {
+      id: 13,
+      title: "PlayStation Portable (PSP)",
+      slug: "psp",
+      image: "placeholder.jpg",
+      core: "psp",
+    },
+    {
+      id: 14,
+      title: "Sega Saturn",
+      slug: "sega-saturn",
+      image: "placeholder.jpg",
+      core: "segaSaturn",
+    },
+    {
+      id: 15,
+      title: "SNK Neo Geo",
+      slug: "neo-geo",
+      image: "placeholder.jpg",
+      // Neo Geo games are supported via Arcade cores (e.g. FBNeo).
+      core: "arcade",
     },
   ];
 

@@ -40,6 +40,7 @@ const ALLOWED_ROM_EXTENSIONS = new Set([
   ".gba",
   ".gb",
   ".gbc",
+  ".nds",
   ".gen",
   ".md",
   ".sms",
@@ -52,6 +53,8 @@ const ALLOWED_ROM_EXTENSIONS = new Set([
   ".bin",
   ".cue",
   ".iso",
+  ".cso",
+  ".pbp",
   ".chd",
 ]);
 

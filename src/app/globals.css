@@ -36,4 +36,30 @@
     background-image: url('/icons/arcade.svg');
   }
 
+  &.snes {
+    background-image: url('/icons/arcade.svg');
+  }
+
+  &.nintendo-64 {
+    background-image: url('/icons/arcade.svg');
+  }
+
+  &.playstation {
+    background-image: url('/icons/arcade.svg');
+  }
+
+  &.sega-mega-drive {
+    background-image: url('/icons/arcade.svg');
+  }
+
+  &.gameboy,
+  &.gameboy-color,
+  &.gameboy-advance,
+  &.nintendo-ds,
+  &.psp,
+  &.sega-saturn,
+  &.neo-geo {
+    background-image: url('/icons/arcade.svg');
+  }
+
 }

@@ -105,6 +105,16 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
         system: core,
       };
 
+      // PSP requires threads to function (SharedArrayBuffer + COOP/COEP headers).
+      // EmulatorJS supports setting threads via option; provide it in config and on the global as a fallback.
+      const shouldUseThreads = core === "psp";
+      config.threads = shouldUseThreads;
+      try {
+        window.EJS_threads = shouldUseThreads;
+      } catch {
+        // ignore
+      }
+
       try {
         const emulator = new window.EmulatorJS("#game", config);
         emulatorRef.current = emulator;
