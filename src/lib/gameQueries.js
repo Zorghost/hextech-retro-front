@@ -164,8 +164,11 @@ export async function getGamesByCategoryId(categoryId) {
   });
 }
 
-export async function getGameCategories() {
+export async function getGameCategories(limit) {
+  const take = Number.isInteger(limit) && limit > 0 ? limit : undefined;
+
   return await prisma.category.findMany({
+    take,
     select: {
       id: true,
       title: true,
