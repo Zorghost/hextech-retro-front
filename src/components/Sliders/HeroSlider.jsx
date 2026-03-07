@@ -1,22 +1,15 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Image from "next/image";
+import { getPublicAssetUrl } from "@/lib/assetUrls";
 
 function HeroSliderFallback() {
   return (
     <div className="h-[340px] md:h-[480px] w-full mb-6 rounded-lg border border-accent-secondary bg-main overflow-hidden">
-      <div className="relative h-full w-full">
-        <Image
-          src="/slide/slide-1.png"
-          alt="Retro games hero banner"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-right"
-        />
-
-        <div className="absolute inset-0 flex items-center px-8 md:px-16">
+      <div
+        className="h-full bg-no-repeat bg-right px-8 md:px-16 lg:p-20 flex items-center"
+        style={{ backgroundImage: `url(${getPublicAssetUrl("/slide/slide-1.png")})` }}
+      >
           <div className="max-w-3xl">
             <div className="text-accent text-sm mb-2 uppercase">Free Arcade Games</div>
             <h1 className="font-display text-2xl md:text-4xl lg:text-6xl mb-4">
@@ -33,7 +26,6 @@ function HeroSliderFallback() {
               Play Mario
             </a>
           </div>
-        </div>
       </div>
     </div>
   );

@@ -5,7 +5,6 @@ import { Navigation, Pagination, Scrollbar, A11y, Autoplay } from "swiper/module
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import Image from "next/image";
 import { getPublicAssetUrl } from "@/lib/assetUrls";
 
 export default function HeroSliderClient() {
@@ -33,20 +32,10 @@ export default function HeroSliderClient() {
         }}
       >
         <SwiperSlide
-          className="relative overflow-hidden px-8 md:px-16 md:p-20 items-center"
-          style={{ display: "flex" }}
+          className="bg-no-repeat bg-right px-8 md:px-16 lg:p-20 items-center"
+          style={{ display: "flex", backgroundImage: `url(${getPublicAssetUrl("/slide/slide-1.png")})` }}
         >
-          <Image
-            src={getPublicAssetUrl("/slide/slide-1.png")}
-            alt="Retro games hero banner"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-right"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/10 to-transparent" />
-
-          <div className="relative z-10 max-w-3xl">
+          <div className="max-w-3xl">
             <div className="text-accent text-sm mb-2 uppercase">Free Arcade Games</div>
             <h1 className="font-display text-2xl md:text-4xl lg:text-6xl mb-4">
               PLAY RETRO GAMES FOR FREE
@@ -65,19 +54,10 @@ export default function HeroSliderClient() {
         </SwiperSlide>
 
         <SwiperSlide
-          className="relative overflow-hidden px-8 md:p-20 items-center"
-          style={{ display: "flex" }}
+          className="bg-no-repeat bg-right p-8 md:p-20 items-center"
+          style={{ display: "flex", backgroundImage: `url(${getPublicAssetUrl("/slide/slide-1.png")})` }}
         >
-          <Image
-            src={getPublicAssetUrl("/slide/slide-1.png")}
-            alt="Retro games hero banner"
-            fill
-            sizes="100vw"
-            className="object-cover object-right"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/10 to-transparent" />
-
-          <div className="relative z-10 max-w-3xl">
+          <div className="max-w-3xl">
             <div className="text-accent text-sm mb-2 uppercase">Just added</div>
             <h1 className="font-display text-4xl lg:text-6xl mb-4">DISCOVER NEW GAMES</h1>
             <p className="mb-6 max-w-[418px]">
