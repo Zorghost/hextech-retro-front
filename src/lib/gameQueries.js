@@ -1,17 +1,24 @@
 import { prisma } from "@/lib/prisma";
 
-const discoverGameSelect = {
+const railGameSelect = {
   id: true,
   title: true,
   slug: true,
   image: true,
+  created_at: true,
   categories: {
     select: {
+      id: true,
       title: true,
+      slug: true,
     },
     take: 1,
   },
 };
+
+function getSafeLimit(limit, fallback = 8) {
+  return Number.isFinite(limit) ? Math.max(1, Math.min(50, limit)) : fallback;
+}
 
 function getRandomIntInclusive(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -44,11 +51,33 @@ function buildRandomIdBatch(minId, maxId, count, excludedIds) {
   return ids;
 }
 
-function normalizeDiscoverGames(games) {
+function normalizeRailGames(games) {
   return games.map((game) => ({
     ...game,
     categoryTitle: game.categories?.[0]?.title ?? null,
   }));
+}
+
+function getUtcWeekSeed(date = new Date()) {
+  const utcDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const day = utcDate.getUTCDay() || 7;
+
+  utcDate.setUTCDate(utcDate.getUTCDate() + 4 - day);
+
+  const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
+  const weekNumber = Math.ceil((((utcDate - yearStart) / 86400000) + 1) / 7);
+
+  return Number(`${utcDate.getUTCFullYear()}${String(weekNumber).padStart(2, "0")}`);
+}
+
+function rotateGamesBySeed(games, seed) {
+  if (games.length <= 1) {
+    return games;
+  }
+
+  const offset = seed % games.length;
+
+  return games.slice(offset).concat(games.slice(0, offset));
 }
 
 export async function getAllGames() {
@@ -216,7 +245,7 @@ export async function getGamesByCategoryId(categoryId) {
 }
 
 export async function getRandomPublishedGames(limit = 8) {
-  const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.min(50, limit)) : 8;
+  const safeLimit = getSafeLimit(limit, 8);
 
   const publishedStats = await prisma.game.aggregate({
     where: {
@@ -272,7 +301,7 @@ export async function getRandomPublishedGames(limit = 8) {
           in: candidateIds,
         },
       },
-      select: discoverGameSelect,
+      select: railGameSelect,
     });
 
     const gamesById = new Map(games.map((game) => [game.id, game]));
@@ -308,7 +337,7 @@ export async function getRandomPublishedGames(limit = 8) {
         id: "asc",
       },
       take: remaining,
-      select: discoverGameSelect,
+      select: railGameSelect,
     });
 
     selectedGames.push(...forwardGames);
@@ -329,7 +358,7 @@ export async function getRandomPublishedGames(limit = 8) {
           id: "asc",
         },
         take: targetCount - selectedGames.length,
-        select: discoverGameSelect,
+        select: railGameSelect,
       });
 
       selectedGames.push(...wraparoundGames);
@@ -338,7 +367,202 @@ export async function getRandomPublishedGames(limit = 8) {
 
   return {
     title: "Discover",
-    games: normalizeDiscoverGames(selectedGames),
+    games: normalizeRailGames(selectedGames),
+  };
+}
+
+export async function getHomepageRecentlyAdded(limit = 8) {
+  const safeLimit = getSafeLimit(limit, 8);
+  const games = await prisma.game.findMany({
+    where: {
+      published: true,
+    },
+    orderBy: [
+      {
+        created_at: "desc",
+      },
+      {
+        id: "desc",
+      },
+    ],
+    take: safeLimit,
+    select: railGameSelect,
+  });
+
+  return {
+    title: "Recently added",
+    href: "/new-games",
+    games: normalizeRailGames(games),
+  };
+}
+
+export async function getHomepagePopularThisWeek(limit = 8) {
+  const safeLimit = getSafeLimit(limit, 8);
+  const recentWindowStart = new Date();
+
+  recentWindowStart.setUTCDate(recentWindowStart.getUTCDate() - 21);
+
+  let games = await prisma.game.findMany({
+    where: {
+      published: true,
+      created_at: {
+        gte: recentWindowStart,
+      },
+    },
+    orderBy: [
+      {
+        created_at: "desc",
+      },
+      {
+        id: "desc",
+      },
+    ],
+    take: Math.max(safeLimit * 3, 12),
+    select: railGameSelect,
+  });
+
+  if (games.length < safeLimit) {
+    games = await prisma.game.findMany({
+      where: {
+        published: true,
+      },
+      orderBy: [
+        {
+          created_at: "desc",
+        },
+        {
+          id: "desc",
+        },
+      ],
+      take: Math.max(safeLimit * 3, 12),
+      select: railGameSelect,
+    });
+  }
+
+  return {
+    title: "Popular this week",
+    games: normalizeRailGames(rotateGamesBySeed(games, getUtcWeekSeed()).slice(0, safeLimit)),
+  };
+}
+
+export async function getHomepagePlatformSpotlights(limit = 2, gamesPerCategory = 4) {
+  const safeCategoryLimit = Number.isFinite(limit) ? Math.max(1, Math.min(4, limit)) : 2;
+  const safeGamesLimit = getSafeLimit(gamesPerCategory, 4);
+  const categories = await prisma.category.findMany({
+    where: {
+      games: {
+        some: {
+          published: true,
+        },
+      },
+    },
+    orderBy: {
+      id: "asc",
+    },
+    take: safeCategoryLimit,
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      games: {
+        where: {
+          published: true,
+        },
+        orderBy: [
+          {
+            created_at: "desc",
+          },
+          {
+            id: "desc",
+          },
+        ],
+        take: safeGamesLimit,
+        select: railGameSelect,
+      },
+    },
+  });
+
+  return categories.map((category) => ({
+    title: `${category.title} spotlight`,
+    slug: category.slug,
+    games: category.games.map((game) => ({
+      ...game,
+      categoryTitle: category.title,
+    })),
+  }));
+}
+
+export async function getHomepageEditorPicks(limit = 8) {
+  const safeLimit = getSafeLimit(limit, 8);
+  const sourceCategories = await prisma.category.findMany({
+    where: {
+      games: {
+        some: {
+          published: true,
+        },
+      },
+    },
+    orderBy: {
+      id: "asc",
+    },
+    take: 4,
+    select: {
+      id: true,
+      title: true,
+      games: {
+        where: {
+          published: true,
+        },
+        orderBy: [
+          {
+            created_at: "desc",
+          },
+          {
+            id: "desc",
+          },
+        ],
+        take: 4,
+        select: railGameSelect,
+      },
+    },
+  });
+
+  const picks = [];
+  const seenIds = new Set();
+  let roundIndex = 0;
+
+  while (picks.length < safeLimit) {
+    let addedInRound = false;
+
+    for (const category of sourceCategories) {
+      const game = category.games[roundIndex];
+
+      if (!game || seenIds.has(game.id)) {
+        continue;
+      }
+
+      seenIds.add(game.id);
+      picks.push({
+        ...game,
+        categoryTitle: category.title,
+      });
+      addedInRound = true;
+
+      if (picks.length >= safeLimit) {
+        break;
+      }
+    }
+
+    if (!addedInRound) {
+      break;
+    }
+
+    roundIndex += 1;
+  }
+
+  return {
+    title: "Editor picks",
+    games: picks,
   };
 }
 
@@ -399,15 +623,20 @@ export async function getSearchResults(params) {
 }
 
 export async function getLatestPublishedGames(limit = 10) {
-  const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.min(50, limit)) : 10;
+  const safeLimit = getSafeLimit(limit, 10);
 
   return await prisma.game.findMany({
     where: {
       published: true,
     },
-    orderBy: {
-      id: "desc",
-    },
+    orderBy: [
+      {
+        created_at: "desc",
+      },
+      {
+        id: "desc",
+      },
+    ],
     take: safeLimit,
     select: {
       id: true,

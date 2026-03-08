@@ -11,7 +11,7 @@ export default function GameCategory({category}) {
   }
 
   const games = Array.isArray(category.games) ? category.games : [];
-  const categoryHref = category.slug ? `/category/${category.slug}` : null;
+  const categoryHref = category.href ?? (category.slug ? `/category/${category.slug}` : null);
 
   return (
     <section className="mb-4">
