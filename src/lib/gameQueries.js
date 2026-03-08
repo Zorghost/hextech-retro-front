@@ -170,6 +170,66 @@ export async function getGameBySlug(slug) {
   });
 }
 
+export async function getRelatedGames(gameId, categoryIds = [], limit = 4) {
+  const safeLimit = getSafeLimit(limit, 4);
+  const normalizedCategoryIds = Array.isArray(categoryIds)
+    ? categoryIds.filter((categoryId) => Number.isInteger(categoryId))
+    : [];
+
+  const relatedGames = normalizedCategoryIds.length
+    ? await prisma.game.findMany({
+        where: {
+          published: true,
+          id: {
+            not: gameId,
+          },
+          categories: {
+            some: {
+              id: {
+                in: normalizedCategoryIds,
+              },
+            },
+          },
+        },
+        orderBy: [
+          {
+            created_at: "desc",
+          },
+          {
+            id: "desc",
+          },
+        ],
+        take: safeLimit,
+        select: railGameSelect,
+      })
+    : [];
+
+  if (relatedGames.length >= safeLimit) {
+    return normalizeRailGames(relatedGames);
+  }
+
+  const fallbackGames = await prisma.game.findMany({
+    where: {
+      published: true,
+      id: {
+        notIn: [gameId, ...relatedGames.map((game) => game.id)],
+      },
+    },
+    orderBy: [
+      {
+        created_at: "desc",
+      },
+      {
+        id: "desc",
+      },
+    ],
+    take: safeLimit - relatedGames.length,
+    select: railGameSelect,
+  });
+
+  return normalizeRailGames([...relatedGames, ...fallbackGames]);
+}
+
 export async function getCategoryBySlug(slug) {
   return await prisma.category.findFirst({
     where: {
