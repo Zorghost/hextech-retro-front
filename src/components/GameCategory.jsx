@@ -10,15 +10,18 @@ export default function GameCategory({category}) {
   }
 
   const games = Array.isArray(category.games) ? category.games : [];
+  const categoryHref = category.slug ? `/category/${category.slug}` : null;
 
   return (
     <section className="mb-4">
       
       <div className="flex justify-between gap-4">
         <h2 className="font-display mb-4 items-center">{category.title}</h2>
-        <a href={`/category/${category.slug}`} className="text-sm font-medium hover:underline underline-offset-4">
-        View All <ChevronRightIcon className="h-4 w-4 inline-block text-accent"/>
-        </a>
+        {categoryHref ? (
+          <a href={categoryHref} className="text-sm font-medium hover:underline underline-offset-4">
+          View All <ChevronRightIcon className="h-4 w-4 inline-block text-accent"/>
+          </a>
+        ) : null}
       </div>
 
       {games.length === 0 ? (
@@ -39,7 +42,7 @@ export default function GameCategory({category}) {
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
             </div>
-              <p className="text-sm text-accent">{category.title}</p>
+              {game.categoryTitle ? <p className="text-sm text-accent">{game.categoryTitle}</p> : null}
               <h1 className="font-medium">{game.title}</h1>
           </a>
         ))}

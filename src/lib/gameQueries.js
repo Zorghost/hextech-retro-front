@@ -164,6 +164,67 @@ export async function getGamesByCategoryId(categoryId) {
   });
 }
 
+export async function getRandomPublishedGames(limit = 8) {
+  const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.min(50, limit)) : 8;
+
+  const publishedGameIds = await prisma.game.findMany({
+    where: {
+      published: true,
+    },
+    select: {
+      id: true,
+    },
+    orderBy: {
+      id: "asc",
+    },
+  });
+
+  if (publishedGameIds.length === 0) {
+    return {
+      title: "Discover",
+      games: [],
+    };
+  }
+
+  const shuffledIds = [...publishedGameIds]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, safeLimit)
+    .map((game) => game.id);
+
+  const games = await prisma.game.findMany({
+    where: {
+      id: {
+        in: shuffledIds,
+      },
+    },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      image: true,
+      categories: {
+        select: {
+          title: true,
+        },
+        take: 1,
+      },
+    },
+  });
+
+  const gamesById = new Map(games.map((game) => [game.id, game]));
+
+  return {
+    title: "Discover",
+    games: shuffledIds
+      .map((id) => gamesById.get(id))
+      .filter(Boolean)
+      .map((game) => ({
+        ...game,
+        categoryTitle: game.categories?.[0]?.title ?? null,
+      })),
+  };
+}
+
 export async function getGameCategories(limit) {
   const take = Number.isInteger(limit) && limit > 0 ? limit : undefined;
 

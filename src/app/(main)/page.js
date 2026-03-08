@@ -1,28 +1,19 @@
 import HeroSlider from "@/components/Sliders/HeroSlider";
 import CategorySlider from "@/components/Sliders/CategorySlider";
 import GameCategory from "@/components/GameCategory";
-import { getGameCategories, getGamesByCategoryId, getGamesBySelectedCategories } from "@/lib/gameQueries";
+import { getGameCategories, getRandomPublishedGames } from "@/lib/gameQueries";
 
 export default async function Home() {
-  // const allCategoreis = await getGameCategories();
-  // const category = await getGamesByCategoryId(1);
-
-  const [allCategoreis, category] = await Promise.all([
+  const [allCategoreis, discoverSection] = await Promise.all([
     getGameCategories(6),
-    getGamesByCategoryId(1)
+    getRandomPublishedGames(8)
   ]);
-
-  const selectedCategoryIds = [1,2,5];
-  const multipleCategories = await getGamesBySelectedCategories(selectedCategoryIds);
 
   return (
     <>
       <HeroSlider />
       <CategorySlider categories={allCategoreis} />
-      {category ? <GameCategory category={category} /> : null}
-
-      {/* <GameCategory category={multipleCategories[1]} /> */}
-      {/* <pre>{JSON.stringify(multipleCategories, null, 2)}</pre> */}
+      {discoverSection ? <GameCategory category={discoverSection} /> : null}
 
     </>
   );
