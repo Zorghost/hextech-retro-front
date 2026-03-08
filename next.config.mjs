@@ -78,14 +78,6 @@ const nextConfig = {
         headers: [...baseHeaders, ...longCacheHeaders],
       },
       {
-        source: "/category/:path*",
-        headers: [...baseHeaders, ...longCacheHeaders],
-      },
-      {
-        source: "/game/:path*",
-        headers: [...baseHeaders, ...longCacheHeaders],
-      },
-      {
         source: "/page/:path*",
         headers: [...baseHeaders, ...longCacheHeaders],
       },
