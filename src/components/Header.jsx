@@ -14,9 +14,9 @@ export default function Header() {
       <Search/>
 
       <nav className="flex gap-4 md:gap-6">
-        <a href="#">
+        <Link href="/dashboard" aria-label="Open dashboard">
           <Cog8ToothIcon className="w-6 h-6"/>
-        </a>
+        </Link>
 
         <MobileNav />
       </nav>

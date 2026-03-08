@@ -3,6 +3,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { getLatestPublishedGames } from "@/lib/gameQueries";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 import { getSiteUrl } from "@/lib/siteUrl";
+import Link from "next/link";
 
 const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
 
@@ -35,7 +36,7 @@ export default async function Page() {
       <nav className="rounded-md w-full mb-4">
         <ol className="list-reset flex">
           <li>
-            <a href="/">Home</a>
+            <Link href="/">Home</Link>
           </li>
           <li>
             <span className="text-gray-500 mx-2">/</span>
@@ -49,18 +50,18 @@ export default async function Page() {
           title="No new games yet"
           description="Once games are published, the latest 10 will show up here."
           action={
-            <a
+            <Link
               href="/category"
               className="inline-flex items-center justify-center rounded-[24px] border border-accent px-5 py-3 text-base font-medium"
             >
               Browse categories
-            </a>
+            </Link>
           }
         />
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {games.map((game) => (
-            <a href={`/game/${game.slug}`} key={game.id} className="group">
+            <Link href={`/game/${game.slug}`} key={game.id} className="group">
               <div className="relative w-full aspect-square overflow-hidden rounded-lg border-accent-secondary border mb-2">
                 <Image
                   src={getGameThumbnailUrl(game.image)}
@@ -72,8 +73,8 @@ export default async function Page() {
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                 />
               </div>
-              <h2 className="font-medium">{game.title}</h2>
-            </a>
+              <p className="font-medium">{game.title}</p>
+            </Link>
           ))}
         </div>
       )}

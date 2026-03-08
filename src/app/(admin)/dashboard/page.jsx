@@ -195,7 +195,7 @@ export default async function Page({ searchParams }) {
                   </div>
                   <div className="flex flex-col gap-1 justify-center">
                     <span className="text-sm text-accent">ID: {game.id}</span>
-                    <h1>{game.title}</h1>
+                    <p>{game.title}</p>
                   </div>
 
                 </Link>

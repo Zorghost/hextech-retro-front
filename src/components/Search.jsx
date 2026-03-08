@@ -6,6 +6,7 @@ import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 export default function Search() {
   const [searchTerm, setSearchTerm] = useState('');
   const router = useRouter();
+  const searchInputId = "site-search";
 
   const handleChange = (event) => {
     setSearchTerm(event.target.value);
@@ -22,9 +23,14 @@ export default function Search() {
   }
 
   return ( 
-    <form onSubmit={handleSearch} className="relative flex-1 max-w-md mx-auto">
-      <MagnifyingGlassIcon className="absolute left-2.5 top-2 h-4 w-4 text-white"/>
-      <input type="search"
+    <form onSubmit={handleSearch} className="relative flex-1 max-w-md mx-auto" role="search">
+      <label htmlFor={searchInputId} className="sr-only">
+        Search for games
+      </label>
+      <MagnifyingGlassIcon className="absolute left-2.5 top-2 h-4 w-4 text-white" aria-hidden="true"/>
+      <input
+      id={searchInputId}
+      type="search"
       value={searchTerm}
       onChange={handleChange}
       placeholder="Search for games... Ex. Super Mario..."

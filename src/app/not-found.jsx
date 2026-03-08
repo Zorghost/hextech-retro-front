@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { getPublicAssetUrl } from "@/lib/assetUrls";
 
 export default function NotFound() {
@@ -19,12 +20,12 @@ export default function NotFound() {
           404
         </h1>
         <p className="mb-8 text-lg font-normal text-gray-200 lg:text-lg">Page Not Found.</p>
-        <a
+        <Link
           href="/"
           className="inline-flex items-center justify-center px-5 py-3 text-base font-medium text-center rounded-[24px] bg-accent focus:right-4"
         >
           Go to homepage...
-        </a>
+        </Link>
       </div>
     </section>
   )

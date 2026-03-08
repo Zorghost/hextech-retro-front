@@ -1,5 +1,6 @@
 import { ChevronRightIcon } from "@heroicons/react/24/outline"
 import Image from "next/image"
+import Link from "next/link"
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 
 const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
@@ -18,9 +19,9 @@ export default function GameCategory({category}) {
       <div className="flex justify-between gap-4">
         <h2 className="font-display mb-4 items-center">{category.title}</h2>
         {categoryHref ? (
-          <a href={categoryHref} className="text-sm font-medium hover:underline underline-offset-4">
+          <Link href={categoryHref} className="text-sm font-medium hover:underline underline-offset-4">
           View All <ChevronRightIcon className="h-4 w-4 inline-block text-accent"/>
-          </a>
+          </Link>
         ) : null}
       </div>
 
@@ -29,7 +30,7 @@ export default function GameCategory({category}) {
       ) : (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {games.map((game) => (
-          <a href={`/game/${game.slug}`} key={game.id} className="group">
+          <Link href={`/game/${game.slug}`} key={game.id} className="group">
             <div className="overflow-hidden rounded-lg border border-accent-secondary mb-2 bg-main">
               <Image
                 src={getGameThumbnailUrl(game.image)}
@@ -43,8 +44,8 @@ export default function GameCategory({category}) {
               />
             </div>
               {game.categoryTitle ? <p className="text-sm text-accent">{game.categoryTitle}</p> : null}
-              <h1 className="font-medium">{game.title}</h1>
-          </a>
+              <p className="font-medium">{game.title}</p>
+          </Link>
         ))}
       </div>
       )}

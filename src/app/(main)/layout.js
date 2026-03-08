@@ -2,8 +2,6 @@ import Header from "@/components/Header";
 import SideBar from "@/components/SideBar";
 import Footer from "@/components/Footer";
 
-export const dynamic = "force-dynamic";
-
 export default function MainLayout ({ children }) {
   return (
     <div className="flex flex-col h-screen">

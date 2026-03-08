@@ -5,6 +5,7 @@ import { Navigation, Pagination, Scrollbar, A11y, Autoplay } from "swiper/module
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
+import Link from "next/link";
 import { getPublicAssetUrl } from "@/lib/assetUrls";
 
 export default function HeroSliderClient() {
@@ -44,12 +45,12 @@ export default function HeroSliderClient() {
               Relive the classics! Dive into our collection of retro games and enjoy them for free.
               Start playing now!
             </p>
-            <a
+            <Link
               href="/search?q=mario"
               className="text-sm bg-accent-gradient py-3 px-6 rounded-xl border border-yellow-400 uppercase"
             >
               Play Mario
-            </a>
+            </Link>
           </div>
         </SwiperSlide>
 
@@ -64,12 +65,12 @@ export default function HeroSliderClient() {
               Check out the latest additions to the library — updated regularly as new games get
               published.
             </p>
-            <a
+            <Link
               href="/new-games"
               className="text-sm bg-accent-gradient py-3 px-6 rounded-xl border border-yellow-400 uppercase"
             >
               View New Games
-            </a>
+            </Link>
           </div>
         </SwiperSlide>
       </Swiper>

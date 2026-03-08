@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { getPublicAssetUrl } from "@/lib/assetUrls";
 
 function HeroSliderFallback() {
@@ -19,12 +20,12 @@ function HeroSliderFallback() {
               Relive the classics! Dive into our collection of retro games and enjoy them for free.
               Start playing now!
             </p>
-            <a
+            <Link
               href="/search?q=mario"
               className="text-sm bg-accent-gradient py-3 px-6 rounded-xl border border-yellow-400 uppercase"
             >
               Play Mario
-            </a>
+            </Link>
           </div>
       </div>
     </div>

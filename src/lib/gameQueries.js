@@ -1,5 +1,56 @@
 import { prisma } from "@/lib/prisma";
 
+const discoverGameSelect = {
+  id: true,
+  title: true,
+  slug: true,
+  image: true,
+  categories: {
+    select: {
+      title: true,
+    },
+    take: 1,
+  },
+};
+
+function getRandomIntInclusive(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function buildRandomIdBatch(minId, maxId, count, excludedIds) {
+  const rangeSize = maxId - minId + 1;
+  const available = Math.max(0, rangeSize - excludedIds.size);
+  const targetCount = Math.min(count, available);
+
+  if (targetCount === 0) {
+    return [];
+  }
+
+  const ids = [];
+  const localExcludedIds = new Set(excludedIds);
+  let attemptsRemaining = Math.max(targetCount * 6, 24);
+
+  while (ids.length < targetCount && attemptsRemaining > 0) {
+    const candidateId = getRandomIntInclusive(minId, maxId);
+
+    if (!localExcludedIds.has(candidateId)) {
+      localExcludedIds.add(candidateId);
+      ids.push(candidateId);
+    }
+
+    attemptsRemaining -= 1;
+  }
+
+  return ids;
+}
+
+function normalizeDiscoverGames(games) {
+  return games.map((game) => ({
+    ...game,
+    categoryTitle: game.categories?.[0]?.title ?? null,
+  }));
+}
+
 export async function getAllGames() {
   return await prisma.game.findMany({
     select: {
@@ -167,61 +218,127 @@ export async function getGamesByCategoryId(categoryId) {
 export async function getRandomPublishedGames(limit = 8) {
   const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.min(50, limit)) : 8;
 
-  const publishedGameIds = await prisma.game.findMany({
+  const publishedStats = await prisma.game.aggregate({
     where: {
       published: true,
     },
-    select: {
+    _count: {
+      _all: true,
+    },
+    _min: {
       id: true,
     },
-    orderBy: {
-      id: "asc",
+    _max: {
+      id: true,
     },
   });
 
-  if (publishedGameIds.length === 0) {
+  const publishedCount = publishedStats._count._all;
+  const minId = publishedStats._min.id;
+  const maxId = publishedStats._max.id;
+
+  if (publishedCount === 0 || minId === null || maxId === null) {
     return {
       title: "Discover",
       games: [],
     };
   }
 
-  const shuffledIds = [...publishedGameIds]
-    .sort(() => Math.random() - 0.5)
-    .slice(0, safeLimit)
-    .map((game) => game.id);
+  const targetCount = Math.min(safeLimit, publishedCount);
+  const rangeSize = maxId - minId + 1;
+  const publishedDensity = publishedCount / rangeSize;
+  const sampledIds = new Set();
+  const selectedIds = new Set();
+  const selectedGames = [];
 
-  const games = await prisma.game.findMany({
-    where: {
-      id: {
-        in: shuffledIds,
-      },
-    },
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      image: true,
-      categories: {
-        select: {
-          title: true,
+  for (let attempt = 0; attempt < 4 && selectedGames.length < targetCount; attempt += 1) {
+    const remaining = targetCount - selectedGames.length;
+    const estimatedBatchSize = Math.ceil((remaining / Math.max(publishedDensity, 0.1)) * 1.5);
+    const batchSize = Math.min(rangeSize, Math.max(remaining * 2, Math.min(estimatedBatchSize, 250)));
+    const candidateIds = buildRandomIdBatch(minId, maxId, batchSize, sampledIds);
+
+    if (candidateIds.length === 0) {
+      break;
+    }
+
+    for (const candidateId of candidateIds) {
+      sampledIds.add(candidateId);
+    }
+
+    const games = await prisma.game.findMany({
+      where: {
+        published: true,
+        id: {
+          in: candidateIds,
         },
-        take: 1,
       },
-    },
-  });
+      select: discoverGameSelect,
+    });
 
-  const gamesById = new Map(games.map((game) => [game.id, game]));
+    const gamesById = new Map(games.map((game) => [game.id, game]));
+
+    for (const candidateId of candidateIds) {
+      const game = gamesById.get(candidateId);
+
+      if (game && !selectedIds.has(game.id)) {
+        selectedIds.add(game.id);
+        selectedGames.push(game);
+      }
+
+      if (selectedGames.length >= targetCount) {
+        break;
+      }
+    }
+  }
+
+  if (selectedGames.length < targetCount) {
+    const pivotId = getRandomIntInclusive(minId, maxId);
+    const remaining = targetCount - selectedGames.length;
+    const selectedIdList = Array.from(selectedIds);
+
+    const forwardGames = await prisma.game.findMany({
+      where: {
+        published: true,
+        id: {
+          gte: pivotId,
+          notIn: selectedIdList,
+        },
+      },
+      orderBy: {
+        id: "asc",
+      },
+      take: remaining,
+      select: discoverGameSelect,
+    });
+
+    selectedGames.push(...forwardGames);
+    for (const game of forwardGames) {
+      selectedIds.add(game.id);
+    }
+
+    if (selectedGames.length < targetCount) {
+      const wraparoundGames = await prisma.game.findMany({
+        where: {
+          published: true,
+          id: {
+            lt: pivotId,
+            notIn: Array.from(selectedIds),
+          },
+        },
+        orderBy: {
+          id: "asc",
+        },
+        take: targetCount - selectedGames.length,
+        select: discoverGameSelect,
+      });
+
+      selectedGames.push(...wraparoundGames);
+    }
+  }
 
   return {
     title: "Discover",
-    games: shuffledIds
-      .map((id) => gamesById.get(id))
-      .filter(Boolean)
-      .map((game) => ({
-        ...game,
-        categoryTitle: game.categories?.[0]?.title ?? null,
-      })),
+    games: normalizeDiscoverGames(selectedGames),
   };
 }
 

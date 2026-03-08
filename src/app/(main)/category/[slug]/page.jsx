@@ -2,6 +2,7 @@ import { getCategoryBySlug, getGamesByCategory } from "@/lib/gameQueries";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 import Image from "next/image";
+import Link from "next/link";
 import EmptyState from "@/components/ui/EmptyState";
 
 const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
@@ -45,7 +46,7 @@ export default async function Page({ params, searchParams }) {
       <nav className='rounded-md w-full mb-4'>
         <ol className='list-reset flex'>
           <li>
-            <a href='/'>Home</a>
+            <Link href='/'>Home</Link>
           </li>
           <li>
             <span className='text-gray-500 mx-2'>/</span>
@@ -61,18 +62,18 @@ export default async function Page({ params, searchParams }) {
               title="No games in this category"
               description="Try another category, or check back later."
               action={
-                <a
+                <Link
                   href="/category"
                   className="inline-flex items-center justify-center rounded-[24px] border border-accent px-5 py-3 text-base font-medium"
                 >
                   Browse categories
-                </a>
+                </Link>
               }
             />
           </div>
         ) : (
           games.map((game) => (
-            <a href={`/game/${game.slug}`} key={game.id} className='group'>
+            <Link href={`/game/${game.slug}`} key={game.id} className='group'>
               <div className='relative w-full aspect-square overflow-hidden rounded-lg border-accent-secondary border mb-2'>
                 <Image
                   src={getGameThumbnailUrl(game.image)}
@@ -84,8 +85,8 @@ export default async function Page({ params, searchParams }) {
                   className='object-cover transition-transform duration-300 group-hover:scale-105'
                 />
               </div>
-              <h1 className='font-medium'>{game.title}</h1>
-            </a>
+              <p className='font-medium'>{game.title}</p>
+            </Link>
           ))
         )}
       </div>
@@ -95,13 +96,13 @@ export default async function Page({ params, searchParams }) {
         <div className='flex justify-center mt-8'>
           <nav className='inline-flex rounded-md shadow'>
             {currentPage > 1 && (
-              <a href={`/category/${params.slug}?page=${currentPage - 1}`}
+              <Link href={`/category/${params.slug}?page=${currentPage - 1}`}
               className='px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50'>
                 Previous
-              </a>
+              </Link>
             )}
             {[...Array(totalPages).keys()].map((pageNum) => (
-              <a href={`/category/${params.slug}?page=${pageNum + 1}`}
+              <Link href={`/category/${params.slug}?page=${pageNum + 1}`}
               key={pageNum + 1}
               className={`px-3 py-2 border border-gray-300 bg-white text-sm font-medium ${
                 currentPage === pageNum + 1
@@ -109,15 +110,15 @@ export default async function Page({ params, searchParams }) {
                 : 'text-gray-500 hover:bg-gray-50'
               }`}>
               {pageNum + 1}
-              </a>
+              </Link>
             ))}
 
             {currentPage < totalPages && (
-              <a href={`/category/${params.slug}?page=${currentPage + 1}`}
+              <Link href={`/category/${params.slug}?page=${currentPage + 1}`}
               className='px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium 
               text-gray-500 hover:bg-gray-50'>
                 Next
-              </a>
+              </Link>
             )}
 
           </nav>

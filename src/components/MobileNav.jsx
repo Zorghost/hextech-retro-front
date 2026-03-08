@@ -1,9 +1,12 @@
 "use client";
+import Link from "next/link";
 import {
   Bars3Icon,
   XMarkIcon,
   HomeIcon,
   CubeIcon,
+  MagnifyingGlassIcon,
+  Cog8ToothIcon,
 } from "@heroicons/react/24/outline";
 import { useState } from "react";
 
@@ -30,37 +33,41 @@ export default function MobileNav() {
       slug: "category",
     },
     {
-      name: "About",
-      path: "/about",
-      icon: CubeIcon,
-      slug: "about",
+      name: "Search",
+      path: "/search",
+      icon: MagnifyingGlassIcon,
+      slug: "search",
     },
     {
-      name: "Contact",
-      path: "/contact",
-      icon: CubeIcon,
-      slug: "contact",
+      name: "Dashboard",
+      path: "/dashboard",
+      icon: Cog8ToothIcon,
+      slug: "dashboard",
     },
   ];
   return (
     <>
       {!isOpen ? (
         <button
+          type="button"
           className="lg:hidden"
           onClick={() => setIsOpen(true)}
+          aria-label="Open navigation menu"
           aria-expanded="false"
           aria-controls="mobile-menu"
         >
-          <Bars3Icon className="h-6 w-6" aria-label="Open Menu" />
+          <Bars3Icon className="h-6 w-6" aria-hidden="true" />
         </button>
       ) : (
         <button
+          type="button"
           className="lg:hidden"
           onClick={() => setIsOpen(false)}
+          aria-label="Close navigation menu"
           aria-expanded="true"
           aria-controls="mobile-menu"
         >
-          <XMarkIcon className="h-6 w-6" aria-label="Close Menu" />
+          <XMarkIcon className="h-6 w-6" aria-hidden="true" />
         </button>
       )}
 
@@ -72,8 +79,9 @@ export default function MobileNav() {
           <ul className="bg-muted flex flex-col mb-6" role="menu">
             {mobileNavItems.map((item) => (
               <li key={item.name} className="border-accent" role="none">
-                <a
+                <Link
                   href={item.path}
+                  onClick={() => setIsOpen(false)}
                   className="text-xl font-medium hover:bg-accent rounderd-md flex gap-4 items-center border-b border-accent py-4 px-6"
                   role="menuitem"
                 >
@@ -82,7 +90,7 @@ export default function MobileNav() {
                     aria-hidden="true"
                   />
                   {item.name}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

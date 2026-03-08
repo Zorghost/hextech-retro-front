@@ -5,6 +5,7 @@ import { getGameThumbnailUrl, getRomUrlWithBase } from "@/lib/assetUrls";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { safeJsonLdStringify } from "@/lib/jsonLd";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import Script from "next/script";
 
 export async function generateMetadata({ params }) {
@@ -108,14 +109,14 @@ export default async function Page({ params }) {
       <nav className="rounded-md w-full mb-4">
         <ol className="list-reset flex">
           <li>
-            <a href="/">Home</a>
+            <Link href="/">Home</Link>
           </li>
           <li>
             <span className="text-gray-500 mx-2">/</span>
           </li>
           <li>
             {primaryCategory ? (
-              <a href={`/category/${primaryCategory.slug}`}>{primaryCategory.title}</a>
+              <Link href={`/category/${primaryCategory.slug}`}>{primaryCategory.title}</Link>
             ) : (
               <span className="text-gray-500">Category</span>
             )}
