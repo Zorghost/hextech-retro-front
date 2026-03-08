@@ -1,6 +1,8 @@
 import { getGameCategories, getPublishedGamesForSitemap } from "@/lib/gameQueries";
 import { getSiteUrl } from "@/lib/siteUrl";
 
+export const dynamic = "force-dynamic";
+
 export default async function sitemap() {
   const siteUrl = getSiteUrl();
   const [games, categories] = await Promise.all([

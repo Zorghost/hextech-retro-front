@@ -18,11 +18,8 @@ RUN apt-get update \
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Provide a default DATABASE_URL so Prisma-related code doesn't fail if the build environment
-# doesn't inject it. Override at runtime in DigitalOcean App Platform.
-ENV DATABASE_URL="file:./dev.db"
-
-# Next.js build (also runs prisma generate via package.json script)
+# Next.js build (also runs prisma generate via package.json script).
+# Public DB-backed routes render dynamically at runtime, so the build no longer needs a fallback DB URL.
 RUN npm run build
 
 FROM node:20-bullseye-slim AS runner
