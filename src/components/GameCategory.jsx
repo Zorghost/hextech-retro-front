@@ -31,16 +31,15 @@ export default function GameCategory({category}) {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {games.map((game) => (
           <Link href={`/game/${game.slug}`} key={game.id} className="group">
-            <div className="overflow-hidden rounded-lg border border-accent-secondary mb-2 bg-main">
+            <div className="relative mb-2 aspect-square overflow-hidden rounded-lg border border-accent-secondary bg-main">
               <Image
                 src={getGameThumbnailUrl(game.image)}
-                width={300}
-                height={300}
+                fill
                 alt={game.title}
                 sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 unoptimized={isProxyImageSource}
                 quality={80}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
               />
             </div>
               {game.categoryTitle ? <p className="text-sm text-accent">{game.categoryTitle}</p> : null}

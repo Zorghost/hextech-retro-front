@@ -62,15 +62,17 @@ export default async function Page(req) {
                   href={`/game/${game.slug}`}
                   className="flex bg-main hover:bg-accent-secondary p-4 rounded-lg gap-4"
                 >
-                  <Image
-                    src={getGameThumbnailUrl(game.image)}
-                    alt={game.title}
-                    className="w-2/6 lg:w-1/6 rounded-md"
-                    width={300}
-                    height={300}
-                    quality={50}
-                    unoptimized
-                  />
+                  <div className="relative aspect-square w-24 shrink-0 overflow-hidden rounded-md sm:w-28 lg:w-32">
+                    <Image
+                      src={getGameThumbnailUrl(game.image)}
+                      alt={game.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 96px, (max-width: 1024px) 112px, 128px"
+                      quality={50}
+                      unoptimized
+                    />
+                  </div>
                   <div className="flex flex-col gap-4">
                     <p className="text-xl">{game.title}</p>
                     <p>{game.description}</p>

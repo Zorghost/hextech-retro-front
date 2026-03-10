@@ -62,15 +62,14 @@ export default function CategorySlider({ categories }) {
         {categories.map((item) => (
           <SwiperSlide key={item?.id ?? item?.slug} className="group">
             <Link href={`/category/${item.slug}`} className="group">
-              <div className="overflow-hidden rounded-lg border border-accent-secondary mb-2 bg-main">
+              <div className="relative mb-2 aspect-square overflow-hidden rounded-lg border border-accent-secondary bg-main">
                 <Image
                   src={getCategoryImageUrl(item.image)}
-                  width={300}
-                  height={300}
+                  fill
                   alt={item.title}
                   sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, 16vw"
                   unoptimized={isProxyImageSource}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
                 />
               </div>
               <h3 className="font-medium leading-snug">{item.title}</h3>
