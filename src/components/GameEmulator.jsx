@@ -187,32 +187,42 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
       ref={wrapperRef}
       className={
         expanded
-          ? "fixed inset-0 z-[9999] bg-black flex flex-col"
+          ? "fixed inset-0 z-[9999] bg-black relative"
           : "rounded-xl border border-accent-secondary bg-main p-4"
       }
     >
       {/* Keep #game at the same depth in the tree in both branches so React never
           unmounts / remounts it, which would reset the emulator. */}
-      <div className={expanded ? "flex-1 flex flex-col" : "w-full max-w-[640px] mx-auto"}>
-        <div className={expanded ? "flex-1" : "w-full aspect-[4/3]"}>
+      <div className={expanded ? "w-full h-full" : "w-full max-w-[640px] mx-auto"}>
+        <div className={expanded ? "w-full h-full" : "w-full aspect-[4/3]"}>
           <div id="game" ref={containerRef} className="w-full h-full touch-none" />
         </div>
-        <div className={expanded ? "shrink-0 flex justify-end p-2" : "flex justify-end mt-3"}>
+      </div>
+
+      {/* Exit button floats over the emulator so it never pushes the game area out of view */}
+      {expanded ? (
+        <button
+          type="button"
+          onClick={exitFullscreen}
+          aria-label="Exit fullscreen"
+          className="absolute top-3 right-3 z-10 flex items-center gap-1.5 rounded-xl border border-white/30 bg-black/60 px-3 py-2 text-sm text-white touch-manipulation backdrop-blur-sm hover:bg-black/80 transition"
+        >
+          <XMarkIcon className="h-4 w-4" aria-hidden="true" />
+          Exit fullscreen
+        </button>
+      ) : (
+        <div className="flex justify-end mt-3">
           <button
             type="button"
-            onClick={expanded ? exitFullscreen : enterFullscreen}
-            aria-label={expanded ? "Exit fullscreen" : "Enter fullscreen"}
+            onClick={enterFullscreen}
+            aria-label="Enter fullscreen"
             className="flex items-center gap-1.5 rounded-xl border border-accent-secondary bg-main/80 px-3 py-2 text-sm text-slate-200 touch-manipulation hover:border-accent hover:text-slate-100 transition"
           >
-            {expanded ? (
-              <XMarkIcon className="h-4 w-4" aria-hidden="true" />
-            ) : (
-              <ArrowsPointingOutIcon className="h-4 w-4" aria-hidden="true" />
-            )}
-            {expanded ? "Exit fullscreen" : "Fullscreen"}
+            <ArrowsPointingOutIcon className="h-4 w-4" aria-hidden="true" />
+            Fullscreen
           </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }
