@@ -1,9 +1,16 @@
 'use client'
+import Image from "next/image"
 import Link from "next/link"
 import React, { useEffect, useMemo, useRef, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { getGameThumbnailUrl } from "@/lib/assetUrls"
+
+const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
+
+function getLiveSearchImageUrl(filename) {
+  return filename ? getGameThumbnailUrl(filename) : "/icons/default.svg";
+}
 
 function SearchChip({ children, href, onClick }) {
   if (href) {
@@ -296,10 +303,13 @@ export default function Search({
                       className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition ${activeIndex === index ? "bg-main" : "hover:bg-main"}`}
                     >
                       <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-accent-secondary bg-main">
-                        <img
-                          src={getGameThumbnailUrl(game.image)}
-                          alt=""
-                          className="h-full w-full object-cover"
+                        <Image
+                          src={getLiveSearchImageUrl(game.image)}
+                          alt={game.title}
+                          fill
+                          sizes="56px"
+                          unoptimized={isProxyImageSource}
+                          className="object-cover"
                         />
                       </div>
                       <div className="min-w-0 flex-1">

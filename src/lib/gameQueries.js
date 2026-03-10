@@ -123,6 +123,39 @@ function dedupeSearchTerms(terms, limit) {
   return items;
 }
 
+function normalizeSearchText(value) {
+  return typeof value === "string"
+    ? value
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .replace(/\s+/g, " ")
+    : "";
+}
+
+function getSearchRank(gameTitle, query) {
+  const normalizedTitle = normalizeSearchText(gameTitle);
+  const normalizedQuery = normalizeSearchText(query);
+
+  if (!normalizedQuery) {
+    return 4;
+  }
+
+  if (normalizedTitle === normalizedQuery) {
+    return 0;
+  }
+
+  if (normalizedTitle.startsWith(normalizedQuery)) {
+    return 1;
+  }
+
+  if (normalizedTitle.split(" ").some((word) => word.startsWith(normalizedQuery))) {
+    return 2;
+  }
+
+  return 3;
+}
+
 export async function getAllGames() {
   return await prisma.game.findMany({
     select: {
@@ -707,16 +740,18 @@ export async function getCategoryMenu() {
 
 export async function getSearchResults(params, options = {}) {
   const take = getSafeLimit(options.limit, 100);
+  const query = typeof params === "string" ? params.trim() : "";
+  const candidateTake = Math.max(take * 5, 30);
 
   const games = await prisma.game.findMany({
     where: {
       published: true,
       title: {
-        contains: params,
+        contains: query,
         mode: "insensitive",
       },
     },
-    take,
+    take: candidateTake,
     orderBy: [
       {
         title: "asc",
@@ -742,10 +777,21 @@ export async function getSearchResults(params, options = {}) {
     },
   });
 
-  return games.map((game) => ({
-    ...game,
-    categoryTitle: game.categories?.[0]?.title ?? null,
-  }));
+  return games
+    .map((game) => ({
+      ...game,
+      categoryTitle: game.categories?.[0]?.title ?? null,
+    }))
+    .sort((leftGame, rightGame) => {
+      const rankDifference = getSearchRank(leftGame.title, query) - getSearchRank(rightGame.title, query);
+
+      if (rankDifference !== 0) {
+        return rankDifference;
+      }
+
+      return leftGame.title.localeCompare(rightGame.title);
+    })
+    .slice(0, take);
 }
 
 const getCachedSearchDiscoveryData = unstable_cache(
