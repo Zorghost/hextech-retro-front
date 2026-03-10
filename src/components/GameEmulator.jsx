@@ -187,7 +187,7 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
       ref={wrapperRef}
       className={
         expanded
-          ? "fixed inset-0 z-[9999] bg-black relative"
+          ? "fixed inset-0 z-[9999] bg-black"
           : "rounded-xl border border-accent-secondary bg-main p-4"
       }
     >
