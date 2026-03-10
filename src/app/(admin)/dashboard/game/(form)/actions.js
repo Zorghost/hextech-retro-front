@@ -147,7 +147,61 @@ function isNextRedirectError(error) {
   );
 }
 
+function getHostnameFromUrl(value) {
+  if (!isNonEmptyString(value)) return null;
+
+  try {
+    return new URL(value).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function getConfiguredSiteHosts() {
+  return [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.NEXT_SITE_URL,
+    process.env.SITE_URL,
+    process.env.NEXTAUTH_URL,
+    process.env.NEXT_WEBSITE_URL,
+    process.env.NEXT_PUBLIC_WEBSITE_URL,
+    process.env.DIGITALOCEAN_APP_URL,
+  ]
+    .map((value) => getHostnameFromUrl(value))
+    .filter(Boolean);
+}
+
+function getStorageEndpointHint() {
+  const endpointHost = getHostnameFromUrl(s3Endpoint);
+  const siteHosts = getConfiguredSiteHosts();
+
+  if (!endpointHost) {
+    return "Check NEXT_S3_ENDPOINT and make sure it points to your S3 API endpoint.";
+  }
+
+  if (siteHosts.includes(endpointHost)) {
+    return `NEXT_S3_ENDPOINT is pointing to your site host (${endpointHost}). It must point to your object storage API endpoint instead.`;
+  }
+
+  return `Check NEXT_S3_ENDPOINT (${endpointHost}) and make sure Cloudflare is not blocking PUT requests to that storage endpoint.`;
+}
+
+function isCloudflareBlockPage(value) {
+  if (!isNonEmptyString(value)) return false;
+
+  const normalized = value.toLowerCase();
+  return (
+    normalized.includes("<!doctype html") &&
+    normalized.includes("cloudflare") &&
+    normalized.includes("sorry, you have been blocked")
+  );
+}
+
 function getErrorMessage(error) {
+  if (isCloudflareBlockPage(error?.message)) {
+    return `Upload request was blocked by Cloudflare. ${getStorageEndpointHint()}`;
+  }
+
   if (typeof error?.message === "string" && error.message.trim().length > 0) {
     return error.message;
   }
