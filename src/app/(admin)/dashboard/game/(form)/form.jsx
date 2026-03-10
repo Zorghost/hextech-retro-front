@@ -111,13 +111,13 @@ export default function GameForm({categories, game}) {
                 <p className="mb text-sm">
                   <b>Click to upload</b> or drag and drop
                 </p>
-                <p className="text-xs">ZIP, RAR, 7zip</p>
+                <p className="text-xs">ZIP, 7Z, and supported ROM formats</p>
               </div>
               <input
                 type="file"
                 id="gameFile"
                 name="gameFile"
-                accept=".zip,.rar,.7zip"
+                accept=".zip,.7z,.nes,.sfc,.smc,.gba,.gb,.gbc,.nds,.gen,.md,.sms,.gg,.pce,.sgx,.n64,.z64,.v64,.bin,.cue,.iso,.cso,.pbp,.chd"
                 className="hidden"
               />
             </label>

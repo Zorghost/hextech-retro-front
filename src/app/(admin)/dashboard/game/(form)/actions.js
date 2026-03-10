@@ -137,6 +137,28 @@ function revalidateGamePages({ slug, oldSlug, id }) {
   }
 }
 
+function isNextRedirectError(error) {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "digest" in error &&
+      typeof error.digest === "string" &&
+      error.digest.startsWith("NEXT_REDIRECT"),
+  );
+}
+
+function getErrorMessage(error) {
+  if (typeof error?.message === "string" && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.trim().length > 0) {
+    return error;
+  }
+
+  return "Failed to save game.";
+}
+
 export async function createGame(prevState, formData) {
   try {
     await requireAdmin();
@@ -338,9 +360,13 @@ export async function createGame(prevState, formData) {
       color: "green",
     };
   } catch (error) {
+    if (isNextRedirectError(error)) {
+      throw error;
+    }
+
     return {
       status: "error",
-      message: error.message,
+      message: getErrorMessage(error),
       color: "red",
     };
   }
