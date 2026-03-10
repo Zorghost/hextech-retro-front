@@ -13,15 +13,17 @@ export default async function Header() {
   });
 
   return ( 
-    <header className="px-4 flex h-14 shrink-0 items-center gap-4">
+    <header className="flex shrink-0 flex-wrap items-center gap-3 px-4 py-3 md:h-14 md:flex-nowrap md:gap-4 md:py-0">
       <Link href="/" className="flex items-center gap-2">
         <Image src="/logo.svg" alt="TheNextGameStation" width={116.56} height={33.8} loading="eager"/>
       </Link>
 
-      <Search {...searchDiscovery} />
+      <div className="order-3 w-full md:order-none md:w-auto md:flex-1">
+        <Search {...searchDiscovery} />
+      </div>
 
-      <nav className="flex gap-4 md:gap-6">
-        <Link href="/dashboard" aria-label="Open dashboard">
+      <nav className="ml-auto flex items-center gap-3 md:gap-6">
+        <Link href="/dashboard" aria-label="Open dashboard" className="hidden md:inline-flex">
           <Cog8ToothIcon className="w-6 h-6"/>
         </Link>
 
