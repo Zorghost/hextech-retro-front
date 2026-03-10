@@ -1,5 +1,6 @@
 'use client'
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowsPointingOutIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 const EMULATORJS_DATA_PATH = "https://cdn.emulatorjs.org/stable/data/";
 const EMULATORJS_SCRIPT_ID = "emulatorjs-runtime";
@@ -57,6 +58,8 @@ function cleanupRuntimeIfRequested() {
 export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = false }) {
   const containerRef = useRef(null);
   const emulatorRef = useRef(null);
+  const wrapperRef = useRef(null);
+  const [expanded, setExpanded] = useState(false);
 
   const core = useMemo(() => {
     const categoryCore = game?.categories?.[0]?.core;
@@ -64,6 +67,41 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
   }, [game]);
 
   const gameUrl = useMemo(() => romUrl || game?.game_url, [romUrl, game]);
+
+  // Attempt native fullscreen; silently fall through to CSS overlay on iOS / unsupported browsers.
+  const enterFullscreen = useCallback(() => {
+    const el = wrapperRef.current;
+    if (el) {
+      const req = el.requestFullscreen ?? el.webkitRequestFullscreen?.bind(el);
+      req?.().catch(() => {});
+    }
+    // Always activate the CSS overlay too — harmless on Android where native FS
+    // overrides layout anyway, and necessary on iOS where the API is absent.
+    setExpanded(true);
+  }, []);
+
+  const exitFullscreen = useCallback(() => {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      const exit = document.exitFullscreen ?? document.webkitExitFullscreen?.bind(document);
+      exit?.();
+    }
+    setExpanded(false);
+  }, []);
+
+  // Sync state when the user exits native fullscreen via Esc / browser back button.
+  useEffect(() => {
+    const onFsChange = () => {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        setExpanded(false);
+      }
+    };
+    document.addEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFsChange);
+      document.removeEventListener("webkitfullscreenchange", onFsChange);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -142,10 +180,37 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
   }, [core, gameUrl, cleanupScriptsOnUnmount]);
 
   return (
-    <div className="rounded-xl border border-accent-secondary bg-main p-4">
-      <div className="w-full max-w-[640px] mx-auto">
-        <div className="w-full aspect-[4/3]">
+    // wrapperRef is the fullscreen target. When `expanded`, it becomes a fixed overlay
+    // that covers the full viewport — this is the CSS fallback for iOS Safari which
+    // does not implement the Fullscreen API.
+    <div
+      ref={wrapperRef}
+      className={
+        expanded
+          ? "fixed inset-0 z-[9999] bg-black flex flex-col"
+          : "rounded-xl border border-accent-secondary bg-main p-4"
+      }
+    >
+      {/* Keep #game at the same depth in the tree in both branches so React never
+          unmounts / remounts it, which would reset the emulator. */}
+      <div className={expanded ? "flex-1 flex flex-col" : "w-full max-w-[640px] mx-auto"}>
+        <div className={expanded ? "flex-1" : "w-full aspect-[4/3]"}>
           <div id="game" ref={containerRef} className="w-full h-full touch-none" />
+        </div>
+        <div className={expanded ? "shrink-0 flex justify-end p-2" : "flex justify-end mt-3"}>
+          <button
+            type="button"
+            onClick={expanded ? exitFullscreen : enterFullscreen}
+            aria-label={expanded ? "Exit fullscreen" : "Enter fullscreen"}
+            className="flex items-center gap-1.5 rounded-xl border border-accent-secondary bg-main/80 px-3 py-2 text-sm text-slate-200 touch-manipulation hover:border-accent hover:text-slate-100 transition"
+          >
+            {expanded ? (
+              <XMarkIcon className="h-4 w-4" aria-hidden="true" />
+            ) : (
+              <ArrowsPointingOutIcon className="h-4 w-4" aria-hidden="true" />
+            )}
+            {expanded ? "Exit fullscreen" : "Fullscreen"}
+          </button>
         </div>
       </div>
     </div>

@@ -323,9 +323,9 @@ export default async function Page({ params }) {
 
             <DetailCard icon={ArrowsPointingOutIcon} title="Fullscreen tips">
               <ul className="space-y-2 text-sm leading-6 text-slate-300">
-                <li>On phones: switch to <strong className="text-slate-100">landscape</strong> first, then tap the fullscreen button in the emulator toolbar for the best fit.</li>
-                <li>On desktop: use the fullscreen button in the toolbar, or press <strong className="text-slate-100">F</strong> if the keyboard shortcut is active.</li>
-                <li>If video or audio glitches after resizing, exit fullscreen once and reload the player.</li>
+                <li>Tap the <strong className="text-slate-100">Fullscreen</strong> button below the player to fill your screen — works on Android and iOS alike.</li>
+                <li>On phones, rotate to <strong className="text-slate-100">landscape</strong> first for the best fit, then tap Fullscreen.</li>
+                <li>If video or audio glitches after resizing, tap <strong className="text-slate-100">Exit fullscreen</strong> once and reload the player.</li>
               </ul>
             </DetailCard>
 
