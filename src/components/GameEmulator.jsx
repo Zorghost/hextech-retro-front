@@ -59,7 +59,10 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
   const containerRef = useRef(null);
   const emulatorRef = useRef(null);
   const wrapperRef = useRef(null);
+  const fullscreenAreaRef = useRef(null);
   const [expanded, setExpanded] = useState(false);
+  const [overlayHeight, setOverlayHeight] = useState(null);
+  const [overlayBounds, setOverlayBounds] = useState(null);
 
   const core = useMemo(() => {
     const categoryCore = game?.categories?.[0]?.core;
@@ -67,6 +70,45 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
   }, [game]);
 
   const gameUrl = useMemo(() => romUrl || game?.game_url, [romUrl, game]);
+
+  const fullscreenFrameStyle = useMemo(() => {
+    if (!expanded || !overlayBounds?.width || !overlayBounds?.height) {
+      return undefined;
+    }
+
+    let width = overlayBounds.width;
+    let height = Math.floor((width * 3) / 4);
+
+    if (height > overlayBounds.height) {
+      height = overlayBounds.height;
+      width = Math.floor((height * 4) / 3);
+    }
+
+    return {
+      width: `${width}px`,
+      height: `${height}px`,
+    };
+  }, [expanded, overlayBounds]);
+
+  const updateOverlayMetrics = useCallback(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const visualViewport = window.visualViewport;
+    const nextHeight = visualViewport ? Math.round(visualViewport.height) : window.innerHeight;
+    const areaEl = fullscreenAreaRef.current;
+
+    setOverlayHeight(nextHeight);
+    setOverlayBounds(
+      areaEl
+        ? {
+            width: Math.round(areaEl.clientWidth),
+            height: Math.round(areaEl.clientHeight),
+          }
+        : null
+    );
+  }, []);
 
   // Attempt native fullscreen; silently fall through to CSS overlay on iOS / unsupported browsers.
   const enterFullscreen = useCallback(() => {
@@ -102,6 +144,51 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
       document.removeEventListener("webkitfullscreenchange", onFsChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (!expanded) {
+      setOverlayHeight(null);
+      setOverlayBounds(null);
+      return;
+    }
+
+    updateOverlayMetrics();
+
+    const visualViewport = window.visualViewport;
+    window.addEventListener("resize", updateOverlayMetrics);
+    window.addEventListener("orientationchange", updateOverlayMetrics);
+    visualViewport?.addEventListener("resize", updateOverlayMetrics);
+    visualViewport?.addEventListener("scroll", updateOverlayMetrics);
+
+    return () => {
+      window.removeEventListener("resize", updateOverlayMetrics);
+      window.removeEventListener("orientationchange", updateOverlayMetrics);
+      visualViewport?.removeEventListener("resize", updateOverlayMetrics);
+      visualViewport?.removeEventListener("scroll", updateOverlayMetrics);
+    };
+  }, [expanded, updateOverlayMetrics]);
+
+  useEffect(() => {
+    if (!expanded || typeof document === "undefined") {
+      return;
+    }
+
+    const htmlStyle = document.documentElement.style;
+    const bodyStyle = document.body.style;
+    const previousHtmlOverflow = htmlStyle.overflow;
+    const previousBodyOverflow = bodyStyle.overflow;
+    const previousBodyOverscroll = bodyStyle.overscrollBehavior;
+
+    htmlStyle.overflow = "hidden";
+    bodyStyle.overflow = "hidden";
+    bodyStyle.overscrollBehavior = "contain";
+
+    return () => {
+      htmlStyle.overflow = previousHtmlOverflow;
+      bodyStyle.overflow = previousBodyOverflow;
+      bodyStyle.overscrollBehavior = previousBodyOverscroll;
+    };
+  }, [expanded]);
 
   useEffect(() => {
     let cancelled = false;
@@ -187,14 +274,31 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
       ref={wrapperRef}
       className={
         expanded
-          ? "fixed inset-0 z-[9999] bg-black"
+          ? "fixed inset-0 z-[9999] overflow-hidden bg-black"
           : "rounded-xl border border-accent-secondary bg-main p-4"
+      }
+      style={
+        expanded
+          ? {
+              height: overlayHeight ? `${overlayHeight}px` : undefined,
+              paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)",
+              paddingRight: "calc(env(safe-area-inset-right, 0px) + 12px)",
+              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
+              paddingLeft: "calc(env(safe-area-inset-left, 0px) + 12px)",
+            }
+          : undefined
       }
     >
       {/* Keep #game at the same depth in the tree in both branches so React never
           unmounts / remounts it, which would reset the emulator. */}
-      <div className={expanded ? "w-full h-full" : "w-full max-w-[640px] mx-auto"}>
-        <div className={expanded ? "w-full h-full" : "w-full aspect-[4/3]"}>
+      <div
+        ref={fullscreenAreaRef}
+        className={expanded ? "flex h-full w-full items-center justify-center" : "w-full max-w-[640px] mx-auto"}
+      >
+        <div
+          className={expanded ? "relative overflow-hidden rounded-xl bg-black" : "w-full aspect-[4/3]"}
+          style={expanded ? fullscreenFrameStyle : undefined}
+        >
           <div id="game" ref={containerRef} className="w-full h-full touch-none" />
         </div>
       </div>
