@@ -155,7 +155,7 @@ export default function MobileNav() {
                 <Link
                   href={item.path}
                   onClick={() => setIsOpen(false)}
-                  className="text-xl font-medium hover:bg-accent rounderd-md flex gap-4 items-center border-b border-accent py-4 px-6"
+                        className="text-xl font-medium hover:bg-accent rounded-md flex gap-4 items-center border-b border-accent py-4 px-6"
                 >
                   <item.icon
                     className="h-6 w-6 text-white"

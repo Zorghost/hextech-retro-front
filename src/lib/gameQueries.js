@@ -80,6 +80,48 @@ function rotateGamesBySeed(games, seed) {
   return games.slice(offset).concat(games.slice(0, offset));
 }
 
+function dedupeSearchGames(games, limit) {
+  const items = [];
+  const seenIds = new Set();
+
+  for (const game of games) {
+    if (!game || seenIds.has(game.id)) {
+      continue;
+    }
+
+    seenIds.add(game.id);
+    items.push(game);
+
+    if (items.length >= limit) {
+      break;
+    }
+  }
+
+  return items;
+}
+
+function dedupeSearchTerms(terms, limit) {
+  const items = [];
+  const seenTerms = new Set();
+
+  for (const term of terms) {
+    const normalizedTerm = typeof term === "string" ? term.trim().toLowerCase() : "";
+
+    if (!normalizedTerm || seenTerms.has(normalizedTerm)) {
+      continue;
+    }
+
+    seenTerms.add(normalizedTerm);
+    items.push(term.trim());
+
+    if (items.length >= limit) {
+      break;
+    }
+  }
+
+  return items;
+}
+
 export async function getAllGames() {
   return await prisma.game.findMany({
     select: {
@@ -680,6 +722,65 @@ export async function getSearchResults(params) {
       image: true,
     },
   });
+}
+
+export async function getSearchDiscoveryData(options = {}) {
+  const suggestionLimit = getSafeLimit(options.suggestionLimit, 12);
+  const platformLimit = getSafeLimit(options.platformLimit, 8);
+  const featuredLimit = getSafeLimit(options.featuredLimit, 6);
+
+  const [autocompleteGames, popularThisWeek, latestGames, categories] = await Promise.all([
+    prisma.game.findMany({
+      where: {
+        published: true,
+      },
+      orderBy: [
+        {
+          title: "asc",
+        },
+        {
+          id: "asc",
+        },
+      ],
+      take: Math.max(suggestionLimit * 4, 40),
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+      },
+    }),
+    getHomepagePopularThisWeek(suggestionLimit),
+    getLatestPublishedGames(suggestionLimit),
+    getGameCategories(platformLimit),
+  ]);
+
+  const featuredGames = dedupeSearchGames(
+    [...(popularThisWeek?.games ?? []), ...latestGames],
+    featuredLimit,
+  );
+
+  return {
+    autocompleteGames: autocompleteGames.slice(0, Math.max(suggestionLimit * 4, 40)),
+    trendingSearches: dedupeSearchTerms(
+      [
+        ...(popularThisWeek?.games ?? []).map((game) => game.title),
+        ...latestGames.map((game) => game.title),
+      ],
+      suggestionLimit,
+    ),
+    platformChips: categories.map((category) => ({
+      id: category.id,
+      title: category.title,
+      slug: category.slug,
+    })),
+    featuredGames: featuredGames.map((game) => ({
+      id: game.id,
+      title: game.title,
+      slug: game.slug,
+      image: game.image,
+      categoryTitle: game.categoryTitle ?? null,
+    })),
+  };
 }
 
 export async function getLatestPublishedGames(limit = 10) {
