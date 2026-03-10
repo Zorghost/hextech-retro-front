@@ -704,8 +704,10 @@ export async function getCategoryMenu() {
   });
 }
 
-export async function getSearchResults(params) {
-  return await prisma.game.findMany({
+export async function getSearchResults(params, options = {}) {
+  const take = getSafeLimit(options.limit, 100);
+
+  const games = await prisma.game.findMany({
     where: {
       published: true,
       title: {
@@ -713,15 +715,36 @@ export async function getSearchResults(params) {
         mode: "insensitive",
       },
     },
-    take: 100,
+    take,
+    orderBy: [
+      {
+        title: "asc",
+      },
+      {
+        id: "asc",
+      },
+    ],
     select: {
       id: true,
       title: true,
       slug: true,
       description: true,
       image: true,
+      categories: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+        },
+        take: 1,
+      },
     },
   });
+
+  return games.map((game) => ({
+    ...game,
+    categoryTitle: game.categories?.[0]?.title ?? null,
+  }));
 }
 
 export async function getSearchDiscoveryData(options = {}) {

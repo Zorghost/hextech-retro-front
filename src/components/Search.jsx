@@ -3,6 +3,7 @@ import Link from "next/link"
 import React, { useEffect, useMemo, useRef, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { getGameThumbnailUrl } from "@/lib/assetUrls"
 
 function SearchChip({ children, href, onClick }) {
   if (href) {
@@ -39,6 +40,9 @@ export default function Search({
   const [searchTerm, setSearchTerm] = useState(currentQuery);
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [liveResults, setLiveResults] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
   const router = useRouter();
   const containerRef = useRef(null);
   const searchInputId = "site-search";
@@ -76,6 +80,55 @@ export default function Search({
       .slice(0, 6);
   }, [autocompleteGames, normalizedSearchTerm]);
 
+  useEffect(() => {
+    if (!trimmedSearchTerm) {
+      setLiveResults([]);
+      setIsLoading(false);
+      setHasFetched(false);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        setIsLoading(true);
+
+        const response = await fetch(`/api/search?q=${encodeURIComponent(trimmedSearchTerm)}`, {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Live search failed with status ${response.status}`);
+        }
+
+        const payload = await response.json();
+        setLiveResults(Array.isArray(payload?.results) ? payload.results : []);
+        setHasFetched(true);
+      } catch (error) {
+        if (error?.name === "AbortError") {
+          return;
+        }
+
+        console.error("Live search request failed", error);
+        setLiveResults([]);
+        setHasFetched(true);
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
+      }
+    }, 180);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
+  }, [trimmedSearchTerm]);
+
+  const displayedResults = trimmedSearchTerm ? liveResults : [];
+  const fallbackSuggestions = trimmedSearchTerm && !displayedResults.length && !isLoading ? gameSuggestions : [];
+
   const platformMatches = useMemo(() => {
     if (!normalizedSearchTerm) {
       return platformChips.slice(0, 6);
@@ -87,7 +140,7 @@ export default function Search({
   }, [normalizedSearchTerm, platformChips]);
 
   const visibleTrendingSearches = trendingSearches.slice(0, 6);
-  const showEmptyMessage = Boolean(trimmedSearchTerm) && gameSuggestions.length === 0;
+  const showEmptyMessage = Boolean(trimmedSearchTerm) && hasFetched && displayedResults.length === 0 && fallbackSuggestions.length === 0;
   const shouldShowDropdown = isOpen && (
     Boolean(trimmedSearchTerm)
     || visibleTrendingSearches.length > 0
@@ -131,14 +184,16 @@ export default function Search({
       return;
     }
 
-    if (!gameSuggestions.length) {
+    const items = displayedResults.length ? displayedResults : fallbackSuggestions;
+
+    if (!items.length) {
       return;
     }
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
       setIsOpen(true);
-      setActiveIndex((currentIndex) => Math.min(currentIndex + 1, gameSuggestions.length - 1));
+      setActiveIndex((currentIndex) => Math.min(currentIndex + 1, items.length - 1));
       return;
     }
 
@@ -150,7 +205,7 @@ export default function Search({
 
     if (event.key === "Enter" && activeIndex >= 0) {
       event.preventDefault();
-      handleSuggestionSelect(gameSuggestions[activeIndex].slug);
+      handleSuggestionSelect(items[activeIndex].slug);
     }
   }
 
@@ -218,26 +273,63 @@ export default function Search({
             </button>
           ) : null}
 
-          {gameSuggestions.length ? (
+          {trimmedSearchTerm ? (
             <div className="border-b border-accent-secondary px-2 py-2">
-              <p className="px-2 pb-1 text-xs uppercase tracking-[0.2em] text-accent">Autocomplete</p>
-              <div id={listboxId} role="listbox" aria-label="Suggested games" className="space-y-1">
-                {gameSuggestions.map((game, index) => (
-                  <button
-                    key={game.id}
-                    id={`${searchInputId}-option-${index}`}
-                    type="button"
-                    role="option"
-                    aria-selected={activeIndex === index}
-                    onMouseEnter={() => setActiveIndex(index)}
-                    onClick={() => handleSuggestionSelect(game.slug)}
-                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition ${activeIndex === index ? "bg-main" : "hover:bg-main"}`}
-                  >
-                    <span className="font-medium text-white">{game.title}</span>
-                    <span className="text-xs text-accent">Open game</span>
-                  </button>
-                ))}
+              <div className="flex items-center justify-between px-2 pb-2">
+                <p className="text-xs uppercase tracking-[0.2em] text-accent">
+                  {displayedResults.length ? "Live results" : "Autocomplete"}
+                </p>
+                {isLoading ? <p className="text-xs text-white/60">Searching...</p> : null}
               </div>
+
+              {displayedResults.length ? (
+                <div id={listboxId} role="listbox" aria-label="Live search results" className="space-y-1">
+                  {displayedResults.map((game, index) => (
+                    <button
+                      key={game.id}
+                      id={`${searchInputId}-option-${index}`}
+                      type="button"
+                      role="option"
+                      aria-selected={activeIndex === index}
+                      onMouseEnter={() => setActiveIndex(index)}
+                      onClick={() => handleSuggestionSelect(game.slug)}
+                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition ${activeIndex === index ? "bg-main" : "hover:bg-main"}`}
+                    >
+                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-accent-secondary bg-main">
+                        <img
+                          src={getGameThumbnailUrl(game.image)}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        {game.categoryTitle ? <p className="text-xs uppercase tracking-[0.2em] text-accent">{game.categoryTitle}</p> : null}
+                        <p className="truncate font-medium text-white">{game.title}</p>
+                        {game.description ? <p className="truncate text-sm text-white/70">{game.description}</p> : null}
+                      </div>
+                      <span className="text-xs text-accent">Open game</span>
+                    </button>
+                  ))}
+                </div>
+              ) : fallbackSuggestions.length ? (
+                <div id={listboxId} role="listbox" aria-label="Suggested games" className="space-y-1">
+                  {fallbackSuggestions.map((game, index) => (
+                    <button
+                      key={game.id}
+                      id={`${searchInputId}-option-${index}`}
+                      type="button"
+                      role="option"
+                      aria-selected={activeIndex === index}
+                      onMouseEnter={() => setActiveIndex(index)}
+                      onClick={() => handleSuggestionSelect(game.slug)}
+                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition ${activeIndex === index ? "bg-main" : "hover:bg-main"}`}
+                    >
+                      <span className="font-medium text-white">{game.title}</span>
+                      <span className="text-xs text-accent">Open game</span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ) : null}
 

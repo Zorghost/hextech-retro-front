@@ -230,27 +230,27 @@ export default async function Page(req) {
         <>
           <div className="text-accent mb-4">{`${games.length} results`}</div>
 
-          <ul>
+          <ul className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {games.map((game) => (
-              <li key={game.id} className="mb-2">
+              <li key={game.id}>
                 <Link
                   href={`/game/${game.slug}`}
-                  className="flex bg-main hover:bg-accent-secondary p-4 rounded-lg gap-4"
+                  className="group block"
                 >
-                  <div className="relative aspect-square w-24 shrink-0 overflow-hidden rounded-md sm:w-28 lg:w-32">
+                  <div className="relative mb-2 aspect-square w-full overflow-hidden rounded-lg border border-accent-secondary bg-main">
                     <Image
                       src={getGameThumbnailUrl(game.image)}
                       alt={game.title}
                       fill
-                      className="object-cover"
-                      sizes="(max-width: 640px) 96px, (max-width: 1024px) 112px, 128px"
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 180px"
                       quality={50}
                       unoptimized
                     />
                   </div>
-                  <div className="flex flex-col gap-4">
-                    <p className="text-xl">{game.title}</p>
-                    <p>{game.description}</p>
+                  <div className="space-y-1">
+                    <p className="font-medium leading-snug">{game.title}</p>
+                    <p className="line-clamp-2 text-sm text-white/75">{game.description}</p>
                   </div>
                 </Link>
               </li>
