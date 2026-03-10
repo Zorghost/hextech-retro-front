@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
 const railGameSelect = {
@@ -747,63 +748,47 @@ export async function getSearchResults(params, options = {}) {
   }));
 }
 
+const getCachedSearchDiscoveryData = unstable_cache(
+  async (suggestionLimit, platformLimit, featuredLimit) => {
+    const [latestGames, categories] = await Promise.all([
+      getLatestPublishedGames(Math.max(suggestionLimit, featuredLimit)),
+      getGameCategories(platformLimit),
+    ]);
+
+    const featuredGames = dedupeSearchGames(latestGames, featuredLimit);
+
+    return {
+      autocompleteGames: [],
+      trendingSearches: dedupeSearchTerms(
+        latestGames.map((game) => game.title),
+        suggestionLimit,
+      ),
+      platformChips: categories.map((category) => ({
+        id: category.id,
+        title: category.title,
+        slug: category.slug,
+      })),
+      featuredGames: featuredGames.map((game) => ({
+        id: game.id,
+        title: game.title,
+        slug: game.slug,
+        image: game.image,
+        categoryTitle: game.categoryTitle ?? null,
+      })),
+    };
+  },
+  ["search-discovery"],
+  {
+    revalidate: 300,
+  },
+);
+
 export async function getSearchDiscoveryData(options = {}) {
   const suggestionLimit = getSafeLimit(options.suggestionLimit, 12);
   const platformLimit = getSafeLimit(options.platformLimit, 8);
   const featuredLimit = getSafeLimit(options.featuredLimit, 6);
 
-  const [autocompleteGames, popularThisWeek, latestGames, categories] = await Promise.all([
-    prisma.game.findMany({
-      where: {
-        published: true,
-      },
-      orderBy: [
-        {
-          title: "asc",
-        },
-        {
-          id: "asc",
-        },
-      ],
-      take: Math.max(suggestionLimit * 4, 40),
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-      },
-    }),
-    getHomepagePopularThisWeek(suggestionLimit),
-    getLatestPublishedGames(suggestionLimit),
-    getGameCategories(platformLimit),
-  ]);
-
-  const featuredGames = dedupeSearchGames(
-    [...(popularThisWeek?.games ?? []), ...latestGames],
-    featuredLimit,
-  );
-
-  return {
-    autocompleteGames: autocompleteGames.slice(0, Math.max(suggestionLimit * 4, 40)),
-    trendingSearches: dedupeSearchTerms(
-      [
-        ...(popularThisWeek?.games ?? []).map((game) => game.title),
-        ...latestGames.map((game) => game.title),
-      ],
-      suggestionLimit,
-    ),
-    platformChips: categories.map((category) => ({
-      id: category.id,
-      title: category.title,
-      slug: category.slug,
-    })),
-    featuredGames: featuredGames.map((game) => ({
-      id: game.id,
-      title: game.title,
-      slug: game.slug,
-      image: game.image,
-      categoryTitle: game.categoryTitle ?? null,
-    })),
-  };
+  return getCachedSearchDiscoveryData(suggestionLimit, platformLimit, featuredLimit);
 }
 
 export async function getLatestPublishedGames(limit = 10) {
