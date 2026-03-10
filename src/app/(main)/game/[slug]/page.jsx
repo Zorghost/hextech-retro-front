@@ -9,6 +9,7 @@ import {
   ArrowsPointingOutIcon,
   CommandLineIcon,
   CpuChipIcon,
+  DevicePhoneMobileIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
@@ -43,11 +44,10 @@ function formatCoreLabel(core) {
   return CORE_LABELS[core] ?? core.split("-").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
 }
 
-function getGamepadCopy(platformLabel) {
+function getKeyboardTips(platformLabel) {
   return [
-    `Most ${platformLabel ?? "retro"} games work best with a keyboard or gamepad once the emulator boots.`,
-    "Start with the arrow keys or D-pad, then try Z / X / A / S for action buttons.",
-    "Enter commonly maps to Start, Shift to Select, and the in-player menu lets you remap if needed.",
+    `Arrow keys or D-pad to move; Z / X / A / S are the main action buttons for most ${platformLabel ?? "retro"} games.`,
+    "Enter → Start, Shift → Select. Use the in-player menu to remap any button.",
   ];
 }
 
@@ -194,7 +194,7 @@ export default async function Page({ params }) {
         year: "numeric",
       }).format(new Date(game.created_at))
     : null;
-  const controlTips = getGamepadCopy(platformLabel);
+  const controlTips = getKeyboardTips(platformLabel);
   const reportHref = buildBrokenRomHref(game, canonical, supportEmail);
   const reportCtaLabel = supportEmail ? "Email a broken-ROM report" : "Report it in comments";
   const categories = Array.isArray(game.categories) ? game.categories : [];
@@ -231,7 +231,7 @@ export default async function Page({ params }) {
         </ol>
       </nav>
 
-      <section className="rounded-[28px] border border-accent-secondary bg-[radial-gradient(circle_at_top,_rgba(68,97,113,0.35),_rgba(3,19,34,0.96)_55%)] p-6 md:p-8">
+      <section className="rounded-[28px] border border-accent-secondary bg-[radial-gradient(circle_at_top,_rgba(68,97,113,0.35),_rgba(3,19,34,0.96)_55%)] p-4 sm:p-6 md:p-8">
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
             <div className="mb-3 flex flex-wrap gap-2">
@@ -265,8 +265,15 @@ export default async function Page({ params }) {
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-4">
             <LazyGameEmulator game={game} romUrl={romUrl} />
-            <div className="rounded-2xl border border-accent-secondary bg-main/70 px-4 py-3 text-sm text-slate-300">
-              Emulator tip: let the player finish loading before entering fullscreen, especially on mobile or lower-powered devices.
+            <div className="md:hidden flex items-start gap-3 rounded-2xl border border-accent-secondary bg-main/70 px-4 py-3 text-sm text-slate-300">
+              <DevicePhoneMobileIcon className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
+              <span>
+                Rotate to <strong className="text-slate-100">landscape</strong> and tap{" "}
+                <strong className="text-slate-100">Load &amp; Play</strong> — touch controls appear on screen automatically.
+              </span>
+            </div>
+            <div className="hidden md:block rounded-2xl border border-accent-secondary bg-main/70 px-4 py-3 text-sm text-slate-300">
+              Tip: let the emulator finish loading before entering fullscreen, especially on lower-powered devices.
             </div>
           </div>
 
@@ -295,18 +302,29 @@ export default async function Page({ params }) {
             </DetailCard>
 
             <DetailCard icon={CommandLineIcon} title="Controls">
-              <ul className="space-y-2 text-sm leading-6 text-slate-300">
-                {controlTips.map((tip) => (
-                  <li key={tip}>{tip}</li>
-                ))}
-                <li className="text-slate-100">On touch devices, wait for the overlay controls to appear after the ROM finishes loading.</li>
-              </ul>
+              <div className="space-y-4 text-sm leading-6 text-slate-300">
+                <div>
+                  <p className="mb-2 text-xs uppercase tracking-[0.18em] text-accent">Touch / mobile</p>
+                  <ul className="space-y-2">
+                    <li>A virtual gamepad overlay appears automatically once the ROM loads — no extra setup needed.</li>
+                    <li>Tap the screen once if the overlay disappears. Use the emulator settings to reposition it.</li>
+                  </ul>
+                </div>
+                <div className="border-t border-accent-secondary/60 pt-4">
+                  <p className="mb-2 text-xs uppercase tracking-[0.18em] text-accent">Keyboard</p>
+                  <ul className="space-y-2">
+                    {controlTips.map((tip) => (
+                      <li key={tip}>{tip}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
             </DetailCard>
 
             <DetailCard icon={ArrowsPointingOutIcon} title="Fullscreen tips">
               <ul className="space-y-2 text-sm leading-6 text-slate-300">
-                <li>Use the fullscreen button inside the emulator toolbar after you press Load & Play.</li>
-                <li>Landscape mode usually gives the cleanest layout on phones and small tablets.</li>
+                <li>On phones: switch to <strong className="text-slate-100">landscape</strong> first, then tap the fullscreen button in the emulator toolbar for the best fit.</li>
+                <li>On desktop: use the fullscreen button in the toolbar, or press <strong className="text-slate-100">F</strong> if the keyboard shortcut is active.</li>
                 <li>If video or audio glitches after resizing, exit fullscreen once and reload the player.</li>
               </ul>
             </DetailCard>

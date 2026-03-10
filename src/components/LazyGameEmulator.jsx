@@ -37,9 +37,9 @@ export default function LazyGameEmulator({ game, romUrl }) {
             <button
               type="button"
               onClick={() => setEnabled(true)}
-              className="text-sm bg-accent-gradient py-3 px-6 rounded-xl border border-yellow-400 uppercase"
+              className="text-sm bg-accent-gradient py-3 px-6 rounded-xl border border-yellow-400 uppercase touch-manipulation"
             >
-              Load & Play
+              Load &amp; Play
             </button>
           </div>
         </div>
