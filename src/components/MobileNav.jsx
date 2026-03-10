@@ -8,10 +8,24 @@ import {
   MagnifyingGlassIcon,
   Cog8ToothIcon,
 } from "@heroicons/react/24/outline";
-import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useId, useRef, useState } from "react";
+
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(", ");
 
 export default function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+  const menuId = useId();
+  const toggleButtonRef = useRef(null);
+  const menuRef = useRef(null);
 
   const mobileNavItems = [
     {
@@ -45,45 +59,103 @@ export default function MobileNav() {
       slug: "dashboard",
     },
   ];
+
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const focusableElements = [
+      toggleButtonRef.current,
+      ...Array.from(menuRef.current?.querySelectorAll(FOCUSABLE_SELECTOR) ?? []),
+    ].filter(Boolean);
+
+    focusableElements.find((element) => element !== toggleButtonRef.current)?.focus();
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+        toggleButtonRef.current?.focus();
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const trappedElements = [
+        toggleButtonRef.current,
+        ...Array.from(menuRef.current?.querySelectorAll(FOCUSABLE_SELECTOR) ?? []),
+      ].filter(Boolean);
+
+      if (trappedElements.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const firstElement = trappedElements[0];
+      const lastElement = trappedElements[trappedElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (!event.shiftKey && activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+
+      if (event.shiftKey && activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+      toggleButtonRef.current?.focus();
+    };
+  }, [isOpen]);
+
   return (
     <>
-      {!isOpen ? (
-        <button
-          type="button"
-          className="lg:hidden"
-          onClick={() => setIsOpen(true)}
-          aria-label="Open navigation menu"
-          aria-expanded="false"
-          aria-controls="mobile-menu"
-        >
-          <Bars3Icon className="h-6 w-6" aria-hidden="true" />
-        </button>
-      ) : (
-        <button
-          type="button"
-          className="lg:hidden"
-          onClick={() => setIsOpen(false)}
-          aria-label="Close navigation menu"
-          aria-expanded="true"
-          aria-controls="mobile-menu"
-        >
+      <button
+        ref={toggleButtonRef}
+        type="button"
+        className="lg:hidden"
+        onClick={() => setIsOpen((open) => !open)}
+        aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
+        aria-expanded={isOpen}
+        aria-controls={menuId}
+      >
+        {isOpen ? (
           <XMarkIcon className="h-6 w-6" aria-hidden="true" />
-        </button>
-      )}
+        ) : (
+          <Bars3Icon className="h-6 w-6" aria-hidden="true" />
+        )}
+      </button>
 
       {isOpen && (
-        <div
-          id="mobile-menu"
+        <nav
+          id={menuId}
+          ref={menuRef}
           className="fixed top-[57px] h-dvh left-0 right-0 z-50 bg-main p-4"
+          aria-label="Mobile navigation"
         >
-          <ul className="bg-muted flex flex-col mb-6" role="menu">
+          <ul className="bg-muted flex flex-col mb-6">
             {mobileNavItems.map((item) => (
-              <li key={item.name} className="border-accent" role="none">
+              <li key={item.name} className="border-accent">
                 <Link
                   href={item.path}
                   onClick={() => setIsOpen(false)}
                   className="text-xl font-medium hover:bg-accent rounderd-md flex gap-4 items-center border-b border-accent py-4 px-6"
-                  role="menuitem"
                 >
                   <item.icon
                     className="h-6 w-6 text-white"
@@ -94,7 +166,7 @@ export default function MobileNav() {
               </li>
             ))}
           </ul>
-        </div>
+        </nav>
       )}
     </>
   );
