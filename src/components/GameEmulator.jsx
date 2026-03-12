@@ -323,7 +323,7 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
       ref={wrapperRef}
       className={
         expanded
-          ? "game-emulator-fullscreen fixed inset-0 z-[9999] overflow-hidden bg-black"
+          ? `game-emulator-fullscreen fixed inset-0 z-[9999] overflow-hidden bg-black ${fullscreenLayout.shouldRotate ? "game-emulator-fullscreen-portrait" : ""}`
           : "rounded-xl border border-accent-secondary bg-main p-4"
       }
       style={
@@ -345,7 +345,7 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
         className={expanded ? "flex h-full w-full items-center justify-center" : "mx-auto w-full max-w-[640px]"}
       >
         <div
-          className={expanded ? `relative overflow-hidden bg-black ${fullscreenLayout.shouldRotate ? "rounded-none" : "rounded-xl"}` : "w-full aspect-[4/3]"}
+          className={expanded ? `relative bg-black ${fullscreenLayout.shouldRotate ? "overflow-visible rounded-none" : "overflow-hidden rounded-xl"}` : "w-full aspect-[4/3]"}
           style={expanded ? fullscreenLayout.frameStyle : undefined}
         >
           <div id="game" ref={containerRef} className="w-full h-full touch-none" />

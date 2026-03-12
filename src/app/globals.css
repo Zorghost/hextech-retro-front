@@ -29,6 +29,47 @@
     width: min(300px, calc(100% - 24px));
   }
 
+  .game-emulator-fullscreen-portrait #game > .ejs_parent,
+  .game-emulator-fullscreen-portrait #game > .ejs_parent > .ejs_game {
+    overflow: visible;
+  }
+
+  .game-emulator-fullscreen-portrait .ejs_virtualGamepad_parent {
+    bottom: 26px;
+  }
+
+  .game-emulator-fullscreen-portrait .ejs_virtualGamepad_left,
+  .game-emulator-fullscreen-portrait .ejs_virtualGamepad_right {
+    bottom: 20px;
+    transform: scale(0.82);
+    transform-origin: bottom center;
+  }
+
+  .game-emulator-fullscreen-portrait .ejs_virtualGamepad_left {
+    left: -6px;
+  }
+
+  .game-emulator-fullscreen-portrait .ejs_virtualGamepad_right {
+    right: -8px;
+  }
+
+  .game-emulator-fullscreen-portrait .ejs_virtualGamepad_top {
+    bottom: 152px;
+    transform: scale(0.82);
+    transform-origin: bottom center;
+  }
+
+  .game-emulator-fullscreen-portrait .ejs_virtualGamepad_bottom {
+    bottom: -4px;
+    transform: scale(0.82);
+    transform-origin: bottom center;
+  }
+
+  .game-emulator-fullscreen-portrait .ejs_virtualGamepad_button {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
   .game-emulator-fullscreen .ejs_virtualGamepad_left,
   .game-emulator-fullscreen .ejs_virtualGamepad_right,
   .game-emulator-fullscreen .ejs_virtualGamepad_bottom,
