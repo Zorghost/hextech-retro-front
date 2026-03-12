@@ -11,6 +11,32 @@
   }
 }
 
+.game-emulator-fullscreen #game,
+.game-emulator-fullscreen #game > .ejs_parent,
+.game-emulator-fullscreen #game > .ejs_parent > .ejs_game,
+.game-emulator-fullscreen #game > .ejs_parent > .ejs_game > .ejs_canvas_parent,
+.game-emulator-fullscreen #game .ejs_canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.game-emulator-fullscreen #game > .ejs_parent {
+  border-radius: inherit;
+}
+
+@media (max-width: 767px) {
+  .game-emulator-fullscreen .ejs_small_screen .ejs_menu_bar {
+    width: min(300px, calc(100% - 24px));
+  }
+
+  .game-emulator-fullscreen .ejs_virtualGamepad_left,
+  .game-emulator-fullscreen .ejs_virtualGamepad_right,
+  .game-emulator-fullscreen .ejs_virtualGamepad_bottom,
+  .game-emulator-fullscreen .ejs_virtualGamepad_top {
+    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.35));
+  }
+}
+
 /* Sidebar Category Icons */
 
 .categoryicon {

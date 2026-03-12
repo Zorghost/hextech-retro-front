@@ -61,6 +61,7 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
   const wrapperRef = useRef(null);
   const fullscreenAreaRef = useRef(null);
   const [expanded, setExpanded] = useState(false);
+  const [coarsePointer, setCoarsePointer] = useState(false);
   const [overlayHeight, setOverlayHeight] = useState(null);
   const [overlayBounds, setOverlayBounds] = useState(null);
 
@@ -71,9 +72,30 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
 
   const gameUrl = useMemo(() => romUrl || game?.game_url, [romUrl, game]);
 
-  const fullscreenFrameStyle = useMemo(() => {
+  const fullscreenLayout = useMemo(() => {
     if (!expanded || !overlayBounds?.width || !overlayBounds?.height) {
-      return undefined;
+      return {
+        frameStyle: undefined,
+        shouldRotate: false,
+      };
+    }
+
+    const isPortraitViewport = overlayBounds.height > overlayBounds.width;
+    const shouldRotate = coarsePointer && isPortraitViewport;
+
+    if (shouldRotate) {
+      const width = Math.min(overlayBounds.height, Math.floor((overlayBounds.width * 4) / 3));
+      const height = Math.floor((width * 3) / 4);
+
+      return {
+        shouldRotate: true,
+        frameStyle: {
+          width: `${width}px`,
+          height: `${height}px`,
+          transform: "rotate(90deg)",
+          transformOrigin: "center center",
+        },
+      };
     }
 
     let width = overlayBounds.width;
@@ -85,10 +107,34 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
     }
 
     return {
-      width: `${width}px`,
-      height: `${height}px`,
+      shouldRotate: false,
+      frameStyle: {
+        width: `${width}px`,
+        height: `${height}px`,
+      },
     };
-  }, [expanded, overlayBounds]);
+  }, [coarsePointer, expanded, overlayBounds]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(pointer: coarse)");
+    const updateCoarsePointer = () => {
+      setCoarsePointer(mediaQuery.matches || window.navigator.maxTouchPoints > 0);
+    };
+
+    updateCoarsePointer();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", updateCoarsePointer);
+      return () => mediaQuery.removeEventListener("change", updateCoarsePointer);
+    }
+
+    mediaQuery.addListener(updateCoarsePointer);
+    return () => mediaQuery.removeListener(updateCoarsePointer);
+  }, []);
 
   const updateOverlayMetrics = useCallback(() => {
     if (typeof window === "undefined") {
@@ -117,6 +163,7 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
       const req = el.requestFullscreen ?? el.webkitRequestFullscreen?.bind(el);
       req?.().catch(() => {});
     }
+    window.screen?.orientation?.lock?.("landscape").catch(() => {});
     // Always activate the CSS overlay too — harmless on Android where native FS
     // overrides layout anyway, and necessary on iOS where the API is absent.
     setExpanded(true);
@@ -127,6 +174,7 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
       const exit = document.exitFullscreen ?? document.webkitExitFullscreen?.bind(document);
       exit?.();
     }
+    window.screen?.orientation?.unlock?.();
     setExpanded(false);
   }, []);
 
@@ -187,6 +235,7 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
       htmlStyle.overflow = previousHtmlOverflow;
       bodyStyle.overflow = previousBodyOverflow;
       bodyStyle.overscrollBehavior = previousBodyOverscroll;
+      window.screen?.orientation?.unlock?.();
     };
   }, [expanded]);
 
@@ -274,7 +323,7 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
       ref={wrapperRef}
       className={
         expanded
-          ? "fixed inset-0 z-[9999] overflow-hidden bg-black"
+          ? "game-emulator-fullscreen fixed inset-0 z-[9999] overflow-hidden bg-black"
           : "rounded-xl border border-accent-secondary bg-main p-4"
       }
       style={
@@ -293,11 +342,11 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
           unmounts / remounts it, which would reset the emulator. */}
       <div
         ref={fullscreenAreaRef}
-        className={expanded ? "flex h-full w-full items-center justify-center" : "w-full max-w-[640px] mx-auto"}
+        className={expanded ? "flex h-full w-full items-center justify-center" : "mx-auto w-full max-w-[640px]"}
       >
         <div
-          className={expanded ? "relative overflow-hidden rounded-xl bg-black" : "w-full aspect-[4/3]"}
-          style={expanded ? fullscreenFrameStyle : undefined}
+          className={expanded ? `relative overflow-hidden bg-black ${fullscreenLayout.shouldRotate ? "rounded-none" : "rounded-xl"}` : "w-full aspect-[4/3]"}
+          style={expanded ? fullscreenLayout.frameStyle : undefined}
         >
           <div id="game" ref={containerRef} className="w-full h-full touch-none" />
         </div>
