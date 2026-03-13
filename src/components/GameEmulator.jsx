@@ -158,10 +158,19 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
 
   // Attempt native fullscreen; silently fall through to CSS overlay on iOS / unsupported browsers.
   const enterFullscreen = useCallback(() => {
-    const el = wrapperRef.current;
-    if (el) {
-      const req = el.requestFullscreen ?? el.webkitRequestFullscreen?.bind(el);
-      req?.().catch(() => {});
+    const wrapperEl = wrapperRef.current;
+    const canvasEl = containerRef.current?.querySelector("canvas");
+    const fullscreenTarget = canvasEl ?? wrapperEl;
+
+    if (fullscreenTarget) {
+      const req =
+        fullscreenTarget.requestFullscreen ??
+        fullscreenTarget.webkitRequestFullscreen?.bind(fullscreenTarget);
+
+      const fullscreenRequest = req?.();
+      if (fullscreenRequest && typeof fullscreenRequest.catch === "function") {
+        fullscreenRequest.catch(() => {});
+      }
     }
     window.screen?.orientation?.lock?.("landscape").catch(() => {});
     // Always activate the CSS overlay too — harmless on Android where native FS
