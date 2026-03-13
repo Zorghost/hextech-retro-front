@@ -6,7 +6,6 @@ import { getSiteUrl } from "@/lib/siteUrl";
 import { safeJsonLdStringify } from "@/lib/jsonLd";
 import { notFound } from "next/navigation";
 import {
-  ArrowsPointingOutIcon,
   CommandLineIcon,
   CpuChipIcon,
   DevicePhoneMobileIcon,
@@ -247,7 +246,7 @@ export default async function Page({ params }) {
             </div>
             <h1 className="font-display text-3xl md:text-4xl">{game.title}</h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300 md:text-base">
-              {game.description || "Load the ROM, try the emulator in fullscreen, and keep a few nearby alternatives ready if you want another run after this one."}
+              {game.description || "Load the ROM and keep a few nearby alternatives ready if you want another run after this one."}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm text-slate-200 sm:w-fit">
@@ -273,7 +272,7 @@ export default async function Page({ params }) {
               </span>
             </div>
             <div className="hidden md:block rounded-2xl border border-accent-secondary bg-main/70 px-4 py-3 text-sm text-slate-300">
-              Tip: let the emulator finish loading before entering fullscreen, especially on lower-powered devices.
+              Tip: let the emulator finish loading before using controls, especially on lower-powered devices.
             </div>
           </div>
 
@@ -319,14 +318,6 @@ export default async function Page({ params }) {
                   </ul>
                 </div>
               </div>
-            </DetailCard>
-
-            <DetailCard icon={ArrowsPointingOutIcon} title="Fullscreen tips">
-              <ul className="space-y-2 text-sm leading-6 text-slate-300">
-                <li>Tap the <strong className="text-slate-100">Fullscreen</strong> button below the player to fill your screen — works on Android and iOS alike.</li>
-                <li>On phones, rotate to <strong className="text-slate-100">landscape</strong> first for the best fit, then tap Fullscreen.</li>
-                <li>If video or audio glitches after resizing, tap <strong className="text-slate-100">Exit fullscreen</strong> once and reload the player.</li>
-              </ul>
             </DetailCard>
 
             <DetailCard icon={ExclamationTriangleIcon} title="Broken ROM reporting">

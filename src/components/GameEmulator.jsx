@@ -1,6 +1,5 @@
 'use client'
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowsPointingOutIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import React, { useEffect, useMemo, useRef } from "react";
 
 const EMULATORJS_DATA_PATH = "https://cdn.emulatorjs.org/stable/data/";
 const EMULATORJS_SCRIPT_ID = "emulatorjs-runtime";
@@ -58,12 +57,6 @@ function cleanupRuntimeIfRequested() {
 export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = false }) {
   const containerRef = useRef(null);
   const emulatorRef = useRef(null);
-  const wrapperRef = useRef(null);
-  const fullscreenAreaRef = useRef(null);
-  const [expanded, setExpanded] = useState(false);
-  const [coarsePointer, setCoarsePointer] = useState(false);
-  const [overlayHeight, setOverlayHeight] = useState(null);
-  const [overlayBounds, setOverlayBounds] = useState(null);
 
   const core = useMemo(() => {
     const categoryCore = game?.categories?.[0]?.core;
@@ -71,182 +64,6 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
   }, [game]);
 
   const gameUrl = useMemo(() => romUrl || game?.game_url, [romUrl, game]);
-
-  const fullscreenLayout = useMemo(() => {
-    if (!expanded || !overlayBounds?.width || !overlayBounds?.height) {
-      return {
-        frameStyle: undefined,
-        shouldRotate: false,
-      };
-    }
-
-    const isPortraitViewport = overlayBounds.height > overlayBounds.width;
-    const shouldRotate = coarsePointer && isPortraitViewport;
-
-    if (shouldRotate) {
-      const width = Math.min(overlayBounds.height, Math.floor((overlayBounds.width * 4) / 3));
-      const height = Math.floor((width * 3) / 4);
-
-      return {
-        shouldRotate: true,
-        frameStyle: {
-          width: `${width}px`,
-          height: `${height}px`,
-          transform: "rotate(90deg)",
-          transformOrigin: "center center",
-        },
-      };
-    }
-
-    let width = overlayBounds.width;
-    let height = Math.floor((width * 3) / 4);
-
-    if (height > overlayBounds.height) {
-      height = overlayBounds.height;
-      width = Math.floor((height * 4) / 3);
-    }
-
-    return {
-      shouldRotate: false,
-      frameStyle: {
-        width: `${width}px`,
-        height: `${height}px`,
-      },
-    };
-  }, [coarsePointer, expanded, overlayBounds]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia("(pointer: coarse)");
-    const updateCoarsePointer = () => {
-      setCoarsePointer(mediaQuery.matches || window.navigator.maxTouchPoints > 0);
-    };
-
-    updateCoarsePointer();
-
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", updateCoarsePointer);
-      return () => mediaQuery.removeEventListener("change", updateCoarsePointer);
-    }
-
-    mediaQuery.addListener(updateCoarsePointer);
-    return () => mediaQuery.removeListener(updateCoarsePointer);
-  }, []);
-
-  const updateOverlayMetrics = useCallback(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const visualViewport = window.visualViewport;
-    const nextHeight = visualViewport ? Math.round(visualViewport.height) : window.innerHeight;
-    const areaEl = fullscreenAreaRef.current;
-
-    setOverlayHeight(nextHeight);
-    setOverlayBounds(
-      areaEl
-        ? {
-            width: Math.round(areaEl.clientWidth),
-            height: Math.round(areaEl.clientHeight),
-          }
-        : null
-    );
-  }, []);
-
-  // Attempt native fullscreen; silently fall through to CSS overlay on iOS / unsupported browsers.
-  const enterFullscreen = useCallback(() => {
-    const wrapperEl = wrapperRef.current;
-    const canvasEl = containerRef.current?.querySelector("canvas");
-    const fullscreenTarget = canvasEl ?? wrapperEl;
-
-    if (fullscreenTarget) {
-      const req =
-        fullscreenTarget.requestFullscreen ??
-        fullscreenTarget.webkitRequestFullscreen?.bind(fullscreenTarget);
-
-      const fullscreenRequest = req?.();
-      if (fullscreenRequest && typeof fullscreenRequest.catch === "function") {
-        fullscreenRequest.catch(() => {});
-      }
-    }
-    window.screen?.orientation?.lock?.("landscape").catch(() => {});
-    // Always activate the CSS overlay too — harmless on Android where native FS
-    // overrides layout anyway, and necessary on iOS where the API is absent.
-    setExpanded(true);
-  }, []);
-
-  const exitFullscreen = useCallback(() => {
-    if (document.fullscreenElement || document.webkitFullscreenElement) {
-      const exit = document.exitFullscreen ?? document.webkitExitFullscreen?.bind(document);
-      exit?.();
-    }
-    window.screen?.orientation?.unlock?.();
-    setExpanded(false);
-  }, []);
-
-  // Sync state when the user exits native fullscreen via Esc / browser back button.
-  useEffect(() => {
-    const onFsChange = () => {
-      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-        setExpanded(false);
-      }
-    };
-    document.addEventListener("fullscreenchange", onFsChange);
-    document.addEventListener("webkitfullscreenchange", onFsChange);
-    return () => {
-      document.removeEventListener("fullscreenchange", onFsChange);
-      document.removeEventListener("webkitfullscreenchange", onFsChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!expanded) {
-      setOverlayHeight(null);
-      setOverlayBounds(null);
-      return;
-    }
-
-    updateOverlayMetrics();
-
-    const visualViewport = window.visualViewport;
-    window.addEventListener("resize", updateOverlayMetrics);
-    window.addEventListener("orientationchange", updateOverlayMetrics);
-    visualViewport?.addEventListener("resize", updateOverlayMetrics);
-    visualViewport?.addEventListener("scroll", updateOverlayMetrics);
-
-    return () => {
-      window.removeEventListener("resize", updateOverlayMetrics);
-      window.removeEventListener("orientationchange", updateOverlayMetrics);
-      visualViewport?.removeEventListener("resize", updateOverlayMetrics);
-      visualViewport?.removeEventListener("scroll", updateOverlayMetrics);
-    };
-  }, [expanded, updateOverlayMetrics]);
-
-  useEffect(() => {
-    if (!expanded || typeof document === "undefined") {
-      return;
-    }
-
-    const htmlStyle = document.documentElement.style;
-    const bodyStyle = document.body.style;
-    const previousHtmlOverflow = htmlStyle.overflow;
-    const previousBodyOverflow = bodyStyle.overflow;
-    const previousBodyOverscroll = bodyStyle.overscrollBehavior;
-
-    htmlStyle.overflow = "hidden";
-    bodyStyle.overflow = "hidden";
-    bodyStyle.overscrollBehavior = "contain";
-
-    return () => {
-      htmlStyle.overflow = previousHtmlOverflow;
-      bodyStyle.overflow = previousBodyOverflow;
-      bodyStyle.overscrollBehavior = previousBodyOverscroll;
-      window.screen?.orientation?.unlock?.();
-    };
-  }, [expanded]);
 
   useEffect(() => {
     let cancelled = false;
@@ -325,66 +142,12 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
   }, [core, gameUrl, cleanupScriptsOnUnmount]);
 
   return (
-    // wrapperRef is the fullscreen target. When `expanded`, it becomes a fixed overlay
-    // that covers the full viewport — this is the CSS fallback for iOS Safari which
-    // does not implement the Fullscreen API.
-    <div
-      ref={wrapperRef}
-      className={
-        expanded
-          ? `game-emulator-fullscreen fixed inset-0 z-[9999] overflow-hidden bg-black ${fullscreenLayout.shouldRotate ? "game-emulator-fullscreen-portrait" : ""}`
-          : "rounded-xl border border-accent-secondary bg-main p-4"
-      }
-      style={
-        expanded
-          ? {
-              height: overlayHeight ? `${overlayHeight}px` : undefined,
-              paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)",
-              paddingRight: "calc(env(safe-area-inset-right, 0px) + 12px)",
-              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
-              paddingLeft: "calc(env(safe-area-inset-left, 0px) + 12px)",
-            }
-          : undefined
-      }
-    >
-      {/* Keep #game at the same depth in the tree in both branches so React never
-          unmounts / remounts it, which would reset the emulator. */}
-      <div
-        ref={fullscreenAreaRef}
-        className={expanded ? "flex h-full w-full items-center justify-center" : "mx-auto w-full max-w-[640px]"}
-      >
-        <div
-          className={expanded ? `relative bg-black ${fullscreenLayout.shouldRotate ? "overflow-visible rounded-none" : "overflow-hidden rounded-xl"}` : "w-full aspect-[4/3]"}
-          style={expanded ? fullscreenLayout.frameStyle : undefined}
-        >
+    <div className="rounded-xl border border-accent-secondary bg-main p-4">
+      <div className="mx-auto w-full max-w-[640px]">
+        <div className="w-full aspect-[4/3]">
           <div id="game" ref={containerRef} className="w-full h-full touch-none" />
         </div>
       </div>
-
-      {/* Exit button floats over the emulator so it never pushes the game area out of view */}
-      {expanded ? (
-        <button
-          type="button"
-          onClick={exitFullscreen}
-          aria-label="Exit fullscreen"
-          className="absolute top-3 right-3 z-10 flex items-center gap-1.5 rounded-xl border border-white/30 bg-black/60 px-3 py-2 text-sm text-white touch-manipulation backdrop-blur-sm hover:bg-black/80 transition"
-        >
-          <XMarkIcon className="h-4 w-4" aria-hidden="true" />
-          Exit fullscreen
-        </button>
-      ) : (
-        <div className="flex justify-end mt-3">
-          <button
-            type="button"
-            onClick={enterFullscreen}
-            aria-label="Enter fullscreen"
-            className="flex items-center gap-1.5 rounded-xl border border-accent-secondary bg-main/80 px-3 py-2 text-sm text-slate-200 touch-manipulation hover:border-accent hover:text-slate-100 transition"
-          >
-            <ArrowsPointingOutIcon className="h-4 w-4" aria-hidden="true" />
-            Fullscreen
-          </button>
-        </div>
-      )}
     </div>
   );
 }
