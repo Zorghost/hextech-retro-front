@@ -7,6 +7,7 @@ const EMULATORJS_CSS_ID = "emulatorjs-runtime-css";
 
 let emulatorJsLoadPromise;
 let audioTrackingInstalled = false;
+let gestureUnlockState = "idle";
 const trackedAudioContexts = new Set();
 
 function trackAudioContext(context) {
@@ -164,18 +165,30 @@ function unlockAudioContextForGesture() {
 
   installAudioContextTracking();
 
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
+  if (gestureUnlockState === "idle") {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) {
+        gestureUnlockState = "done";
+      } else {
+        gestureUnlockState = "pending";
+        const ctx = trackAudioContext(new AudioCtx());
 
-    const ctx = new AudioCtx();
-    Promise.resolve(ctx.resume())
-      .catch(() => {})
-      .finally(() => {
-        Promise.resolve(ctx.close?.()).catch(() => {});
-      });
-  } catch {
-    // ignore
+        Promise.resolve(ctx.resume())
+          .then(() => {
+            gestureUnlockState = "done";
+          })
+          .catch(() => {
+            // Keep retry-able; Safari may reject if gesture context was not valid.
+            gestureUnlockState = "idle";
+          })
+          .finally(() => {
+            Promise.resolve(ctx.close?.()).catch(() => {});
+          });
+      }
+    } catch {
+      gestureUnlockState = "idle";
+    }
   }
 
   tryResumeEmulatorAudioContexts();
