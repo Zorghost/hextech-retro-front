@@ -78,6 +78,83 @@ function resumeTrackedAudioContexts() {
   });
 }
 
+function patchEmulatorJsMobileSafariResumeFlow() {
+  if (typeof window === "undefined") return;
+
+  const EmulatorCtor = window.EmulatorJS;
+  const proto = EmulatorCtor?.prototype;
+  if (!proto || proto.__hextechMobileSafariPatched) return;
+
+  const originalCheckStarted = proto.checkStarted;
+
+  proto.checkStarted = function patchedCheckStarted(...args) {
+    if (!this?.isSafari || !this?.isMobile) {
+      if (typeof originalCheckStarted === "function") {
+        return originalCheckStarted.apply(this, args);
+      }
+      return;
+    }
+
+    const tryResume = () => {
+      unlockAudioContextForGesture();
+
+      try {
+        const currentContext = this?.Module?.AL?.currentCtx;
+        if (currentContext?.state === "suspended" && typeof currentContext.resume === "function") {
+          Promise.resolve(currentContext.resume()).catch(() => {});
+        }
+
+        const sources = currentContext?.sources;
+        if (Array.isArray(sources)) {
+          sources.forEach((source) => {
+            const sourceContext = source?.gain?.context;
+            if (sourceContext?.state === "suspended" && typeof sourceContext.resume === "function") {
+              Promise.resolve(sourceContext.resume()).catch(() => {});
+            }
+          });
+        }
+
+        if (currentContext?.state === "running") {
+          if (typeof this.closePopup === "function") {
+            this.closePopup();
+          }
+          return true;
+        }
+
+        if (Array.isArray(sources)) {
+          const anyRunning = sources.some((source) => source?.gain?.context?.state === "running");
+          if (anyRunning) {
+            if (typeof this.closePopup === "function") {
+              this.closePopup();
+            }
+            return true;
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      return false;
+    };
+
+    let attempts = 0;
+    const maxAttempts = 120;
+
+    const tick = () => {
+      if (tryResume()) return;
+
+      attempts += 1;
+      if (attempts < maxAttempts) {
+        setTimeout(tick, 100);
+      }
+    };
+
+    setTimeout(tick, 50);
+  };
+
+  proto.__hextechMobileSafariPatched = true;
+}
+
 function unlockAudioContextForGesture() {
   if (typeof window === "undefined") return;
 
@@ -122,7 +199,10 @@ function unlockAudioContextForGesture() {
 function ensureEmulatorJsLoaded() {
   if (typeof window === "undefined") return Promise.resolve();
   installAudioContextTracking();
-  if (typeof window.EmulatorJS === "function") return Promise.resolve();
+  if (typeof window.EmulatorJS === "function") {
+    patchEmulatorJsMobileSafariResumeFlow();
+    return Promise.resolve();
+  }
 
   if (emulatorJsLoadPromise) return emulatorJsLoadPromise;
 
@@ -130,7 +210,10 @@ function ensureEmulatorJsLoaded() {
     const existingScript = document.getElementById(EMULATORJS_SCRIPT_ID);
     if (existingScript) {
       const waitForRuntime = () => {
-        if (typeof window.EmulatorJS === "function") resolve();
+        if (typeof window.EmulatorJS === "function") {
+          patchEmulatorJsMobileSafariResumeFlow();
+          resolve();
+        }
         else setTimeout(waitForRuntime, 25);
       };
       waitForRuntime();
@@ -149,7 +232,10 @@ function ensureEmulatorJsLoaded() {
     script.id = EMULATORJS_SCRIPT_ID;
     script.src = `${EMULATORJS_DATA_PATH}emulator.min.js`;
     script.async = true;
-    script.onload = () => resolve();
+    script.onload = () => {
+      patchEmulatorJsMobileSafariResumeFlow();
+      resolve();
+    };
     script.onerror = () => reject(new Error("Failed to load EmulatorJS runtime"));
     document.head.appendChild(script);
   });
