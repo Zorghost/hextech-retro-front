@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getSearchDiscoveryData, getSearchResults } from "@/lib/gameQueries";
+import { getSearchDiscoveryData, getSearchResults } from "@/features/game/queries";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 import EmptyState from "@/components/ui/EmptyState";
 

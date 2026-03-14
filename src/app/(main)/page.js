@@ -1,7 +1,7 @@
 import HeroSlider from "@/components/Sliders/HeroSlider";
 import CategorySlider from "@/components/Sliders/CategorySlider";
 import GameCategory from "@/components/GameCategory";
-import { safeJsonLdStringify } from "@/lib/jsonLd";
+import { safeJsonLdStringify } from "@/features/game/seo";
 import { getSiteUrl } from "@/lib/siteUrl";
 import {
   getGameCategories,
@@ -10,7 +10,7 @@ import {
   getHomepagePopularThisWeek,
   getHomepageRecentlyAdded,
   getRandomPublishedGames,
-} from "@/lib/gameQueries";
+} from "@/features/game/queries";
 
 function dedupeRail(section, excludedIds) {
   if (!section) {

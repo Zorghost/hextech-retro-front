@@ -3,7 +3,7 @@ import Link from "next/link"
 import Search from "@/components/Search"
 import MobileNav from "@/components/MobileNav"
 import { Cog8ToothIcon } from "@heroicons/react/24/outline"
-import { getSearchDiscoveryData } from "@/lib/gameQueries"
+import { getSearchDiscoveryData } from "@/features/game/queries"
 
 export default async function Header() {
   const searchDiscovery = await getSearchDiscoveryData({

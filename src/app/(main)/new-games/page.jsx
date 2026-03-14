@@ -1,6 +1,6 @@
 import Image from "next/image";
 import EmptyState from "@/components/ui/EmptyState";
-import { getLatestPublishedGames } from "@/lib/gameQueries";
+import { getLatestPublishedGames } from "@/features/game/queries";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 import { getSiteUrl } from "@/lib/siteUrl";
 import Link from "next/link";

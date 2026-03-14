@@ -5,7 +5,7 @@ import { randomUUID } from "crypto";
 import path from "path";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/adminAuth";
+import { requireAdmin } from "@/features/admin/auth";
 
 function getEnv(name, fallbackName) {
   return process.env[name] ?? (fallbackName ? process.env[fallbackName] : undefined);

@@ -1,5 +1,5 @@
 import Header from "@/components/Admin/Header"
-import { getGameCategories } from "@/lib/adminQueries"
+import { getGameCategories } from "@/features/admin/queries"
 import GameForm from "@/app/(admin)/dashboard/game/(form)/form"
 import EmptyState from "@/components/ui/EmptyState";
 import Link from "next/link";

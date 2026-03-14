@@ -1,4 +1,4 @@
-import { getCategoryBySlug, getGamesByCategory } from "@/lib/gameQueries";
+import { getCategoryBySlug, getGamesByCategory } from "@/features/game/queries";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 import Image from "next/image";

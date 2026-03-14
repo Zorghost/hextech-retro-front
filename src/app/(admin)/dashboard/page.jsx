@@ -1,5 +1,5 @@
 import Header from "@/components/Admin/Header"
-import { getGameCategories, getGameCounts, getGamesPage } from "@/lib/adminQueries"
+import { getGameCategories, getGameCounts, getGamesPage } from "@/features/admin/queries"
 import Image from "next/image";
 import Link from "next/link";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";

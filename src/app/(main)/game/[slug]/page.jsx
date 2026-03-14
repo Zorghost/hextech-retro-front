@@ -1,9 +1,9 @@
-import { getGameBySlug, getRelatedGames } from "@/lib/gameQueries";
+import { getGameBySlug, getRelatedGames } from "@/features/game/queries";
 import LazyGameEmulator from "@/components/LazyGameEmulator";
 import LazyDisqus from "@/components/LazyDisqus";
 import { getGameThumbnailUrl, getRomUrlWithBase } from "@/lib/assetUrls";
 import { getSiteUrl } from "@/lib/siteUrl";
-import { safeJsonLdStringify } from "@/lib/jsonLd";
+import { safeJsonLdStringify } from "@/features/game/seo";
 import { notFound } from "next/navigation";
 import {
   CommandLineIcon,

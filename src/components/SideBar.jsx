@@ -1,4 +1,4 @@
-import { getCategoryMenu } from "@/lib/gameQueries"
+import { getCategoryMenu } from "@/features/game/queries"
 import SideBarNav from "@/components/SideBarNav"
 
 export default async function SideBar() {

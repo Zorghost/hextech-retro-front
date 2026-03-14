@@ -1,4 +1,4 @@
-import { getGameCategories, getPublishedGamesForSitemap } from "@/lib/gameQueries";
+import { getGameCategories, getPublishedGamesForSitemap } from "@/features/game/queries";
 import { getSiteUrl } from "@/lib/siteUrl";
 
 export const dynamic = "force-dynamic";

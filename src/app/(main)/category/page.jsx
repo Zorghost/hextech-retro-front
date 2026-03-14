@@ -1,4 +1,4 @@
-import { getGameCategories } from "@/lib/gameQueries"
+import { getGameCategories } from "@/features/game/queries"
 import EmptyState from "@/components/ui/EmptyState";
 import Image from "next/image";
 import Link from "next/link";

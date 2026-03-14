@@ -1,4 +1,4 @@
-import { getSearchResults } from "@/lib/gameQueries";
+import { getSearchResults } from "@/features/game/queries";
 
 export const runtime = "nodejs";
 
