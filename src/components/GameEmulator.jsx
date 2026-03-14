@@ -78,6 +78,40 @@ function resumeTrackedAudioContexts() {
   });
 }
 
+function tryResumeEmulatorAudioContexts(emulatorInstance) {
+  try {
+    resumeTrackedAudioContexts();
+
+    const base = emulatorInstance || window?.EJS_emulator;
+    const currentContext = base?.Module?.AL?.currentCtx;
+    if (currentContext?.state === "suspended" && typeof currentContext.resume === "function") {
+      Promise.resolve(currentContext.resume()).catch(() => {});
+    }
+
+    const sources = currentContext?.sources;
+    if (Array.isArray(sources)) {
+      sources.forEach((source) => {
+        const context = source?.gain?.context;
+        if (context?.state === "suspended" && typeof context.resume === "function") {
+          Promise.resolve(context.resume()).catch(() => {});
+        }
+      });
+    }
+
+    if (currentContext?.state === "running") {
+      return true;
+    }
+
+    if (Array.isArray(sources)) {
+      return sources.some((source) => source?.gain?.context?.state === "running");
+    }
+  } catch {
+    // ignore
+  }
+
+  return false;
+}
+
 function patchEmulatorJsMobileSafariResumeFlow() {
   if (typeof window === "undefined") return;
 
@@ -96,42 +130,12 @@ function patchEmulatorJsMobileSafariResumeFlow() {
     }
 
     const tryResume = () => {
-      unlockAudioContextForGesture();
-
-      try {
-        const currentContext = this?.Module?.AL?.currentCtx;
-        if (currentContext?.state === "suspended" && typeof currentContext.resume === "function") {
-          Promise.resolve(currentContext.resume()).catch(() => {});
+      const resumed = tryResumeEmulatorAudioContexts(this);
+      if (resumed) {
+        if (typeof this.closePopup === "function") {
+          this.closePopup();
         }
-
-        const sources = currentContext?.sources;
-        if (Array.isArray(sources)) {
-          sources.forEach((source) => {
-            const sourceContext = source?.gain?.context;
-            if (sourceContext?.state === "suspended" && typeof sourceContext.resume === "function") {
-              Promise.resolve(sourceContext.resume()).catch(() => {});
-            }
-          });
-        }
-
-        if (currentContext?.state === "running") {
-          if (typeof this.closePopup === "function") {
-            this.closePopup();
-          }
-          return true;
-        }
-
-        if (Array.isArray(sources)) {
-          const anyRunning = sources.some((source) => source?.gain?.context?.state === "running");
-          if (anyRunning) {
-            if (typeof this.closePopup === "function") {
-              this.closePopup();
-            }
-            return true;
-          }
-        }
-      } catch {
-        // ignore
+        return true;
       }
 
       return false;
@@ -174,26 +178,7 @@ function unlockAudioContextForGesture() {
     // ignore
   }
 
-  try {
-    resumeTrackedAudioContexts();
-
-    const currentContext = window?.EJS_emulator?.Module?.AL?.currentCtx;
-    if (currentContext?.state === "suspended" && typeof currentContext.resume === "function") {
-      Promise.resolve(currentContext.resume()).catch(() => {});
-    }
-
-    const sources = window?.EJS_emulator?.Module?.AL?.currentCtx?.sources;
-    if (Array.isArray(sources)) {
-      sources.forEach((source) => {
-        const context = source?.gain?.context;
-        if (context?.state === "suspended" && typeof context.resume === "function") {
-          Promise.resolve(context.resume()).catch(() => {});
-        }
-      });
-    }
-  } catch {
-    // ignore
-  }
+  tryResumeEmulatorAudioContexts();
 }
 
 function ensureEmulatorJsLoaded() {
@@ -311,6 +296,7 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
         dataPath: EMULATORJS_DATA_PATH,
         system: core,
         startOnLoad: true,
+        softLoad: 0,
       };
 
       // PSP requires threads to function (SharedArrayBuffer + COOP/COEP headers).
