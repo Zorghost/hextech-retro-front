@@ -6,9 +6,82 @@ const EMULATORJS_SCRIPT_ID = "emulatorjs-runtime";
 const EMULATORJS_CSS_ID = "emulatorjs-runtime-css";
 
 let emulatorJsLoadPromise;
+let audioTrackingInstalled = false;
+const trackedAudioContexts = new Set();
+
+function trackAudioContext(context) {
+  if (!context) return context;
+
+  trackedAudioContexts.add(context);
+
+  const forget = () => {
+    trackedAudioContexts.delete(context);
+  };
+
+  try {
+    if (typeof context.addEventListener === "function") {
+      context.addEventListener("statechange", () => {
+        if (context.state === "closed") {
+          forget();
+        }
+      });
+    }
+  } catch {
+    // ignore
+  }
+
+  try {
+    if (typeof context.close === "function") {
+      const originalClose = context.close.bind(context);
+      context.close = (...args) => {
+        forget();
+        return originalClose(...args);
+      };
+    }
+  } catch {
+    // ignore
+  }
+
+  return context;
+}
+
+function installAudioContextTracking() {
+  if (typeof window === "undefined" || audioTrackingInstalled) return;
+
+  const wrapConstructor = (key) => {
+    const OriginalCtor = window[key];
+    if (typeof OriginalCtor !== "function") return;
+    if (OriginalCtor.__ejsTrackedWrapper) return;
+
+    const WrappedCtor = function WrappedAudioContext(...args) {
+      return trackAudioContext(new OriginalCtor(...args));
+    };
+
+    WrappedCtor.prototype = OriginalCtor.prototype;
+    Object.setPrototypeOf(WrappedCtor, OriginalCtor);
+    WrappedCtor.__ejsTrackedWrapper = true;
+    WrappedCtor.__ejsOriginal = OriginalCtor;
+
+    window[key] = WrappedCtor;
+  };
+
+  wrapConstructor("AudioContext");
+  wrapConstructor("webkitAudioContext");
+  audioTrackingInstalled = true;
+}
+
+function resumeTrackedAudioContexts() {
+  trackedAudioContexts.forEach((context) => {
+    if (context?.state === "suspended" && typeof context.resume === "function") {
+      Promise.resolve(context.resume()).catch(() => {});
+    }
+  });
+}
 
 function unlockAudioContextForGesture() {
   if (typeof window === "undefined") return;
+
+  installAudioContextTracking();
 
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -25,15 +98,22 @@ function unlockAudioContextForGesture() {
   }
 
   try {
-    const sources = window?.EJS_emulator?.Module?.AL?.currentCtx?.sources;
-    if (!Array.isArray(sources)) return;
+    resumeTrackedAudioContexts();
 
-    sources.forEach((source) => {
-      const context = source?.gain?.context;
-      if (context?.state === "suspended" && typeof context.resume === "function") {
-        Promise.resolve(context.resume()).catch(() => {});
-      }
-    });
+    const currentContext = window?.EJS_emulator?.Module?.AL?.currentCtx;
+    if (currentContext?.state === "suspended" && typeof currentContext.resume === "function") {
+      Promise.resolve(currentContext.resume()).catch(() => {});
+    }
+
+    const sources = window?.EJS_emulator?.Module?.AL?.currentCtx?.sources;
+    if (Array.isArray(sources)) {
+      sources.forEach((source) => {
+        const context = source?.gain?.context;
+        if (context?.state === "suspended" && typeof context.resume === "function") {
+          Promise.resolve(context.resume()).catch(() => {});
+        }
+      });
+    }
   } catch {
     // ignore
   }
@@ -41,6 +121,7 @@ function unlockAudioContextForGesture() {
 
 function ensureEmulatorJsLoaded() {
   if (typeof window === "undefined") return Promise.resolve();
+  installAudioContextTracking();
   if (typeof window.EmulatorJS === "function") return Promise.resolve();
 
   if (emulatorJsLoadPromise) return emulatorJsLoadPromise;
@@ -105,11 +186,9 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
       unlockAudioContextForGesture();
     };
 
-    if (containerEl) {
-      containerEl.addEventListener("touchstart", handleGesture, true);
-      containerEl.addEventListener("pointerdown", handleGesture, true);
-      containerEl.addEventListener("click", handleGesture, true);
-    }
+    document.addEventListener("touchstart", handleGesture, true);
+    document.addEventListener("pointerdown", handleGesture, true);
+    document.addEventListener("click", handleGesture, true);
 
     const destroyExisting = () => {
       const emulator = emulatorRef.current;
@@ -145,6 +224,7 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
         gameUrl,
         dataPath: EMULATORJS_DATA_PATH,
         system: core,
+        startOnLoad: true,
       };
 
       // PSP requires threads to function (SharedArrayBuffer + COOP/COEP headers).
@@ -170,11 +250,9 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
 
     return () => {
       cancelled = true;
-      if (containerEl) {
-        containerEl.removeEventListener("touchstart", handleGesture, true);
-        containerEl.removeEventListener("pointerdown", handleGesture, true);
-        containerEl.removeEventListener("click", handleGesture, true);
-      }
+      document.removeEventListener("touchstart", handleGesture, true);
+      document.removeEventListener("pointerdown", handleGesture, true);
+      document.removeEventListener("click", handleGesture, true);
       try {
         if (emulatorRef.current && typeof emulatorRef.current.destroy === "function") {
           emulatorRef.current.destroy();
