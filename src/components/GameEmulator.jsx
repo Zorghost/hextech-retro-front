@@ -7,6 +7,38 @@ const EMULATORJS_CSS_ID = "emulatorjs-runtime-css";
 
 let emulatorJsLoadPromise;
 
+function unlockAudioContextForGesture() {
+  if (typeof window === "undefined") return;
+
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+
+    const ctx = new AudioCtx();
+    Promise.resolve(ctx.resume())
+      .catch(() => {})
+      .finally(() => {
+        Promise.resolve(ctx.close?.()).catch(() => {});
+      });
+  } catch {
+    // ignore
+  }
+
+  try {
+    const sources = window?.EJS_emulator?.Module?.AL?.currentCtx?.sources;
+    if (!Array.isArray(sources)) return;
+
+    sources.forEach((source) => {
+      const context = source?.gain?.context;
+      if (context?.state === "suspended" && typeof context.resume === "function") {
+        Promise.resolve(context.resume()).catch(() => {});
+      }
+    });
+  } catch {
+    // ignore
+  }
+}
+
 function ensureEmulatorJsLoaded() {
   if (typeof window === "undefined") return Promise.resolve();
   if (typeof window.EmulatorJS === "function") return Promise.resolve();
@@ -69,6 +101,16 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
     let cancelled = false;
     const containerEl = containerRef.current;
 
+    const handleGesture = () => {
+      unlockAudioContextForGesture();
+    };
+
+    if (containerEl) {
+      containerEl.addEventListener("touchstart", handleGesture, true);
+      containerEl.addEventListener("pointerdown", handleGesture, true);
+      containerEl.addEventListener("click", handleGesture, true);
+    }
+
     const destroyExisting = () => {
       const emulator = emulatorRef.current;
       emulatorRef.current = null;
@@ -128,6 +170,11 @@ export default function GameEmulator({ game, romUrl, cleanupScriptsOnUnmount = f
 
     return () => {
       cancelled = true;
+      if (containerEl) {
+        containerEl.removeEventListener("touchstart", handleGesture, true);
+        containerEl.removeEventListener("pointerdown", handleGesture, true);
+        containerEl.removeEventListener("click", handleGesture, true);
+      }
       try {
         if (emulatorRef.current && typeof emulatorRef.current.destroy === "function") {
           emulatorRef.current.destroy();
