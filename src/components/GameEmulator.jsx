@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 
 const EMULATOR_LOADER_SRC = "https://cdn.emulatorjs.org/stable/data/loader.js";
 
@@ -11,6 +11,8 @@ function resolveGameUrl(game, romUrl) {
 }
 
 export default function GameEmulator({ game, romUrl }) {
+  const containerRef = useRef(null);
+
   useEffect(() => {
     const gameUrl = resolveGameUrl(game, romUrl);
     const core = game?.categories?.[0]?.core;
@@ -41,8 +43,65 @@ export default function GameEmulator({ game, romUrl }) {
     };
   }, [game, romUrl]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const scrollKeys = new Set([
+      "ArrowUp",
+      "ArrowDown",
+      "ArrowLeft",
+      "ArrowRight",
+      " ",
+      "PageUp",
+      "PageDown",
+      "Home",
+      "End",
+    ]);
+
+    const isEmulatorActive = () => {
+      const active = document.activeElement;
+      if (active && (active === container || container.contains(active))) {
+        return true;
+      }
+
+      const fullscreenEl = document.fullscreenElement;
+      if (fullscreenEl && (container.contains(fullscreenEl) || fullscreenEl.contains(container))) {
+        return true;
+      }
+
+      return false;
+    };
+
+    const handleKeyDown = (event) => {
+      if (!scrollKeys.has(event.key)) return;
+      if (isEmulatorActive()) {
+        event.preventDefault();
+      }
+    };
+
+    const focusContainer = () => {
+      if (document.activeElement !== container) {
+        container.focus({ preventScroll: true });
+      }
+    };
+
+    container.addEventListener("pointerdown", focusContainer);
+    window.addEventListener("keydown", handleKeyDown, { capture: true });
+
+    return () => {
+      container.removeEventListener("pointerdown", focusContainer);
+      window.removeEventListener("keydown", handleKeyDown, { capture: true });
+    };
+  }, []);
+
   return (
-    <div className="rounded-xl border border-accent-secondary bg-main p-4">
+    <div
+      ref={containerRef}
+      tabIndex={0}
+      className="rounded-xl border border-accent-secondary bg-main p-4 focus:outline-none"
+      aria-label="Game emulator"
+    >
       <div className="mx-auto w-full max-w-[640px]">
         <div className="w-full aspect-[4/3]">
           <div id="game" className="w-full h-full" />
