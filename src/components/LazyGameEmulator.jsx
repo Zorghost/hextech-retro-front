@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 function EmulatorLoading() {
@@ -23,7 +23,25 @@ const GameEmulator = dynamic(() => import("@/components/GameEmulator"), {
 
 export default function LazyGameEmulator({ game, romUrl }) {
   const [enabled, setEnabled] = useState(false);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [showMobileFullscreenButton, setShowMobileFullscreenButton] = useState(false);
   const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const prefersMobileViewport = window.matchMedia?.("(max-width: 768px)")?.matches;
+    const usesCoarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches;
+    const isMobile = Boolean(prefersMobileViewport || usesCoarsePointer);
+    setIsMobileDevice(isMobile);
+
+    const fullscreenTarget = containerRef.current;
+    const canRequestFullscreen = Boolean(
+      fullscreenTarget && typeof fullscreenTarget.requestFullscreen === "function"
+    );
+
+    setShowMobileFullscreenButton(isMobile && canRequestFullscreen);
+  }, []);
 
   async function requestMobileFullscreenExperience() {
     if (typeof window === "undefined") return;
@@ -61,6 +79,22 @@ export default function LazyGameEmulator({ game, romUrl }) {
 
   return (
     <div ref={containerRef}>
+      {enabled && showMobileFullscreenButton ? (
+        <div className="mb-3 flex justify-end">
+          <button
+            type="button"
+            onClick={requestMobileFullscreenExperience}
+            className="text-xs bg-accent-gradient py-2 px-3 rounded-lg border border-yellow-400 uppercase touch-manipulation"
+          >
+            Fullscreen
+          </button>
+        </div>
+      ) : null}
+      {enabled && isMobileDevice && !showMobileFullscreenButton ? (
+        <p className="mb-3 text-xs text-gray-400 text-right">
+          Fullscreen is not supported on this browser.
+        </p>
+      ) : null}
       {enabled ? (
         <GameEmulator game={game} romUrl={romUrl} />
       ) : (
