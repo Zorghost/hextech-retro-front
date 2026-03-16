@@ -213,9 +213,11 @@ function getErrorMessage(error) {
   return "Failed to save game.";
 }
 
-export async function createGame(prevState, formData) {
+export async function createGame(prevState, formData, options = {}) {
   try {
-    await requireAdmin();
+    if (!options?.skipAdminCheck) {
+      await requireAdmin();
+    }
     // Grab ID to update
     const id = formData.get("gameId");
     const title = formData.get("title");

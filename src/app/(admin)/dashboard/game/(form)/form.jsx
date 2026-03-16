@@ -4,18 +4,29 @@ import { createGame, deleteFormAction } from "@/app/(admin)/dashboard/game/(form
 import { PhotoIcon, ArchiveBoxIcon } from "@heroicons/react/24/outline";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 import Image from "next/image";
+import { useMemo, useState } from "react";
 
 const initialState = { message: null }
 
-function SubmitButton() {
+function SubmitButton({ isCreateMode, isUploading, uploadProgress }) {
   const { pending } = useFormStatus();
+  const buttonPending = isCreateMode ? isUploading : pending;
+
+  let label = "Save";
+  if (isCreateMode && isUploading) {
+    const progress = Number.isFinite(uploadProgress) ? uploadProgress : 0;
+    label = `Uploading... ${progress}%`;
+  } else if (!isCreateMode && pending) {
+    label = "Saving...";
+  }
 
   return (
     <button 
       type="submit"
-      aria-disabled={pending}
+      disabled={buttonPending}
+      aria-disabled={buttonPending}
       className="w-full text-white bg-yellow-500 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
-        {pending ? "Saving..." : "Save"}
+        {label}
     </button>
   )
 }
@@ -36,17 +47,86 @@ function DeleteButton() {
 }
 export default function GameForm({categories, game}) {
   const [state, formAction] = useFormState(createGame, initialState);
+  const [clientState, setClientState] = useState(initialState);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const publishedDefault = typeof game?.published === "boolean" ? game.published : false;
+  const isCreateMode = !game?.id;
+
+  const currentState = useMemo(() => {
+    return isCreateMode ? clientState : state;
+  }, [isCreateMode, clientState, state]);
+
+  const handleCreateSubmit = async (event) => {
+    if (!isCreateMode || isUploading) return;
+
+    event.preventDefault();
+    setClientState(initialState);
+    setUploadProgress(0);
+    setIsUploading(true);
+
+    const formData = new FormData(event.currentTarget);
+
+    const result = await new Promise((resolve) => {
+      const request = new XMLHttpRequest();
+
+      request.open("POST", "/api/admin/games");
+      request.responseType = "json";
+
+      request.upload.onprogress = (uploadEvent) => {
+        if (!uploadEvent.lengthComputable) return;
+        const percent = Math.round((uploadEvent.loaded / uploadEvent.total) * 100);
+        setUploadProgress(Math.min(percent, 99));
+      };
+
+      request.onload = () => {
+        const responsePayload = request.response && typeof request.response === "object"
+          ? request.response
+          : null;
+
+        if (request.status >= 200 && request.status < 300 && responsePayload) {
+          setUploadProgress(100);
+          resolve(responsePayload);
+          return;
+        }
+
+        resolve(
+          responsePayload ?? {
+            status: "error",
+            message: "Failed to save game.",
+            color: "red",
+          },
+        );
+      };
+
+      request.onerror = () => {
+        resolve({
+          status: "error",
+          message: "Network error while uploading the game.",
+          color: "red",
+        });
+      };
+
+      request.send(formData);
+    });
+
+    setClientState(result);
+    setIsUploading(false);
+  };
 
   return (
     <div>
-      {state.message && (
-        <p className={`text-sm mb-4`} style={{ 'color': state.color }}>
-          {state.message} - Status: {state.status} - Color: {state.color}
+      {currentState.message && (
+        <p className={`text-sm mb-4`} style={{ 'color': currentState.color }}>
+          {currentState.message} - Status: {currentState.status} - Color: {currentState.color}
         </p>
       )}
       
-      <form className="flex flex-col lg:flex-row gap-8" action={formAction}>
+      <form
+        className="flex flex-col lg:flex-row gap-8"
+        action={isCreateMode ? undefined : formAction}
+        onSubmit={isCreateMode ? handleCreateSubmit : undefined}
+      >
 
         <input type="text" id="gameId" name="gameId" className="hidden" defaultValue={game?.id} />
 
@@ -229,7 +309,23 @@ export default function GameForm({categories, game}) {
 
           </div>
 
-          <SubmitButton />
+          <SubmitButton
+            isCreateMode={isCreateMode}
+            isUploading={isUploading}
+            uploadProgress={uploadProgress}
+          />
+
+          {isCreateMode && isUploading && (
+            <div className="mt-3">
+              <div className="h-2 w-full rounded bg-accent/20 overflow-hidden">
+                <div
+                  className="h-2 bg-yellow-500 transition-all duration-200"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <p className="mt-2 text-xs text-accent">Upload progress: {uploadProgress}%</p>
+            </div>
+          )}
         </div>
         
       </form>
