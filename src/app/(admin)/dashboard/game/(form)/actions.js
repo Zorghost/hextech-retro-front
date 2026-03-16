@@ -227,6 +227,10 @@ export async function createGame(prevState, formData, options = {}) {
     const published = formData.get("published") === "true";
     const thumbnailFile = formData.get("thumbnailFile");
     const gameFile = formData.get("gameFile");
+    const uploadedGameFileNameRaw = formData.get("uploadedGameFileName");
+    const uploadedGameFileName = isNonEmptyString(uploadedGameFileNameRaw)
+      ? uploadedGameFileNameRaw.trim()
+      : null;
 
     const parsedId = id ? parseInt(id, 10) : null;
     const parsedCategoryId = categoryId ? parseInt(categoryId, 10) : null;
@@ -245,6 +249,19 @@ export async function createGame(prevState, formData, options = {}) {
         message: "Category is required.",
         color: "red",
       };
+    }
+
+    if (uploadedGameFileName) {
+      assertSafeOriginalFilename(uploadedGameFileName);
+      const uploadedRomExt = getLowerExtension(uploadedGameFileName);
+
+      if (!uploadedRomExt || !ALLOWED_ROM_EXTENSIONS.has(uploadedRomExt)) {
+        return {
+          status: "error",
+          message: "Uploaded game file has an invalid extension.",
+          color: "red",
+        };
+      }
     }
 
     let existingGameRecord = null;
@@ -305,6 +322,9 @@ export async function createGame(prevState, formData, options = {}) {
             uploadedObjectKeys.push(uploaded.objectKey);
             gameData.game_url = uploaded.filename;
           }
+        } else if (uploadedGameFileName) {
+          uploadedObjectKeys.push(`rom/${uploadedGameFileName}`);
+          gameData.game_url = uploadedGameFileName;
         }
 
         // update the game
@@ -368,7 +388,7 @@ export async function createGame(prevState, formData, options = {}) {
         };
       }
 
-      if (!isValidUploadFile(gameFile)) {
+      if (!isValidUploadFile(gameFile) && !uploadedGameFileName) {
         return {
           status: "error",
           message: "Game file is required.",
@@ -380,7 +400,9 @@ export async function createGame(prevState, formData, options = {}) {
       try {
         // Upload first so DB doesn't point at missing objects.
         const uploadedThumbnail = await uploadThumbnail(thumbnailFile);
-        const uploadedRom = await uploadGame(gameFile);
+        const uploadedRom = isValidUploadFile(gameFile)
+          ? await uploadGame(gameFile)
+          : null;
 
         if (uploadedThumbnail) {
           uploadedObjectKeys.push(uploadedThumbnail.objectKey);
@@ -390,6 +412,9 @@ export async function createGame(prevState, formData, options = {}) {
         if (uploadedRom) {
           uploadedObjectKeys.push(uploadedRom.objectKey);
           gameData.game_url = uploadedRom.filename;
+        } else if (uploadedGameFileName) {
+          uploadedObjectKeys.push(`rom/${uploadedGameFileName}`);
+          gameData.game_url = uploadedGameFileName;
         }
 
         // Create new game

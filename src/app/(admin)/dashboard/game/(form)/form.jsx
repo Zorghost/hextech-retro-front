@@ -7,6 +7,173 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 
 const initialState = { message: null }
+const CHUNK_THRESHOLD_BYTES = 100 * 1024 * 1024;
+const CHUNK_SIZE_BYTES = 8 * 1024 * 1024;
+
+function postJson(url, payload) {
+  return fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  }).then(async (response) => {
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(typeof body?.message === "string" ? body.message : "Request failed.");
+    }
+    return body;
+  });
+}
+
+function uploadFormDataWithProgress(url, formData, onProgress) {
+  return new Promise((resolve) => {
+    const request = new XMLHttpRequest();
+
+    request.open("POST", url);
+    request.responseType = "json";
+
+    request.upload.onprogress = (uploadEvent) => {
+      if (!uploadEvent.lengthComputable) return;
+      const percent = Math.round((uploadEvent.loaded / uploadEvent.total) * 100);
+      onProgress(percent);
+    };
+
+    request.onload = () => {
+      const responsePayload = request.response && typeof request.response === "object"
+        ? request.response
+        : null;
+
+      if (request.status >= 200 && request.status < 300 && responsePayload) {
+        resolve(responsePayload);
+        return;
+      }
+
+      resolve(
+        responsePayload ?? {
+          status: "error",
+          message: "Failed to save game.",
+          color: "red",
+        },
+      );
+    };
+
+    request.onerror = () => {
+      resolve({
+        status: "error",
+        message: "Network error while uploading the game.",
+        color: "red",
+      });
+    };
+
+    request.send(formData);
+  });
+}
+
+function uploadChunkPart({ key, uploadId, partNumber, chunk, onProgress }) {
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.set("action", "uploadPart");
+    formData.set("key", key);
+    formData.set("uploadId", uploadId);
+    formData.set("partNumber", String(partNumber));
+    formData.set("chunk", chunk, `part-${partNumber}`);
+
+    const request = new XMLHttpRequest();
+    request.open("POST", "/api/admin/uploads/game-multipart");
+    request.responseType = "json";
+
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        onProgress(event.loaded);
+      }
+    };
+
+    request.onload = () => {
+      const response = request.response && typeof request.response === "object" ? request.response : null;
+      if (request.status >= 200 && request.status < 300 && response?.eTag) {
+        resolve(response.eTag);
+        return;
+      }
+
+      reject(new Error(typeof response?.message === "string" ? response.message : "Chunk upload failed."));
+    };
+
+    request.onerror = () => {
+      reject(new Error("Network error while uploading chunk."));
+    };
+
+    request.send(formData);
+  });
+}
+
+async function uploadLargeGameInChunks(file, setUploadProgress) {
+  const init = await postJson("/api/admin/uploads/game-multipart", {
+    action: "init",
+    filename: file.name,
+    contentType: file.type,
+  });
+
+  const uploadId = init?.uploadId;
+  const key = init?.key;
+
+  if (typeof uploadId !== "string" || typeof key !== "string") {
+    throw new Error("Failed to initialize chunk upload.");
+  }
+
+  const parts = [];
+  let uploadedBytes = 0;
+
+  try {
+    const totalParts = Math.ceil(file.size / CHUNK_SIZE_BYTES);
+
+    for (let index = 0; index < totalParts; index += 1) {
+      const partNumber = index + 1;
+      const start = index * CHUNK_SIZE_BYTES;
+      const end = Math.min(start + CHUNK_SIZE_BYTES, file.size);
+      const chunk = file.slice(start, end);
+
+      const eTag = await uploadChunkPart({
+        key,
+        uploadId,
+        partNumber,
+        chunk,
+        onProgress: (loaded) => {
+          const rawPercent = ((uploadedBytes + loaded) / file.size) * 95;
+          setUploadProgress(Math.max(1, Math.min(95, Math.round(rawPercent))));
+        },
+      });
+
+      uploadedBytes += chunk.size;
+      parts.push({ partNumber, eTag });
+      const completedPercent = (uploadedBytes / file.size) * 95;
+      setUploadProgress(Math.max(1, Math.min(95, Math.round(completedPercent))));
+    }
+
+    const complete = await postJson("/api/admin/uploads/game-multipart", {
+      action: "complete",
+      key,
+      uploadId,
+      parts,
+    });
+
+    setUploadProgress(95);
+
+    if (typeof complete?.filename !== "string") {
+      throw new Error("Upload completed but filename is missing.");
+    }
+
+    return complete.filename;
+  } catch (error) {
+    await postJson("/api/admin/uploads/game-multipart", {
+      action: "abort",
+      key,
+      uploadId,
+    }).catch(() => {
+      // Best-effort abort.
+    });
+
+    throw error;
+  }
+}
 
 function SubmitButton({ isCreateMode, isUploading, uploadProgress }) {
   const { pending } = useFormStatus();
@@ -67,50 +234,32 @@ export default function GameForm({categories, game}) {
 
     const formData = new FormData(event.currentTarget);
 
-    const result = await new Promise((resolve) => {
-      const request = new XMLHttpRequest();
+    try {
+      const gameFile = formData.get("gameFile");
 
-      request.open("POST", "/api/admin/games");
-      request.responseType = "json";
+      if (gameFile instanceof File && gameFile.size > CHUNK_THRESHOLD_BYTES) {
+        const uploadedGameFileName = await uploadLargeGameInChunks(gameFile, setUploadProgress);
+        formData.delete("gameFile");
+        formData.set("uploadedGameFileName", uploadedGameFileName);
+      }
 
-      request.upload.onprogress = (uploadEvent) => {
-        if (!uploadEvent.lengthComputable) return;
-        const percent = Math.round((uploadEvent.loaded / uploadEvent.total) * 100);
-        setUploadProgress(Math.min(percent, 99));
-      };
+      const result = await uploadFormDataWithProgress("/api/admin/games", formData, (percent) => {
+        const adjusted = 95 + Math.round((percent / 100) * 5);
+        setUploadProgress(Math.min(99, adjusted));
+      });
 
-      request.onload = () => {
-        const responsePayload = request.response && typeof request.response === "object"
-          ? request.response
-          : null;
+      setClientState(result);
+      if (result?.status === "success") {
+        setUploadProgress(100);
+      }
+    } catch (error) {
+      setClientState({
+        status: "error",
+        message: typeof error?.message === "string" ? error.message : "Failed to upload game.",
+        color: "red",
+      });
+    }
 
-        if (request.status >= 200 && request.status < 300 && responsePayload) {
-          setUploadProgress(100);
-          resolve(responsePayload);
-          return;
-        }
-
-        resolve(
-          responsePayload ?? {
-            status: "error",
-            message: "Failed to save game.",
-            color: "red",
-          },
-        );
-      };
-
-      request.onerror = () => {
-        resolve({
-          status: "error",
-          message: "Network error while uploading the game.",
-          color: "red",
-        });
-      };
-
-      request.send(formData);
-    });
-
-    setClientState(result);
     setIsUploading(false);
   };
 
