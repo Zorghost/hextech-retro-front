@@ -25,7 +25,7 @@ export default function GameEmulator({ game, romUrl }) {
     window.EJS_gameUrl = gameUrl;
     window.EJS_core = String(core);
     window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
-    // Don't set EJS_language to avoid 404 on missing localization files from CDN
+    window.EJS_language = "en"; // Use base English to avoid en-GB, en-US localization 404 errors
     window.EJS_Buttons = {
       fullscreen: true,
     };
