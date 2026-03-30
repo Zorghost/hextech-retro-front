@@ -12,6 +12,7 @@ function resolveGameUrl(game, romUrl) {
 
 export default function GameEmulator({ game, romUrl }) {
   const containerRef = useRef(null);
+  const loaderLoadedRef = useRef(false);
 
   useEffect(() => {
     const gameUrl = resolveGameUrl(game, romUrl);
@@ -19,18 +20,24 @@ export default function GameEmulator({ game, romUrl }) {
 
     if (!gameUrl || !core) return;
 
+    // Configure EmulatorJS before loading the script
     window.EJS_player = "#game";
     window.EJS_gameUrl = gameUrl;
     window.EJS_core = String(core);
     window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
+    window.EJS_language = "en"; // Set fallback language to prevent en-GB errors
     window.EJS_Buttons = {
       fullscreen: true,
     };
 
-    const script = document.createElement("script");
-    script.src = EMULATOR_LOADER_SRC;
-    script.async = true;
-    document.body.appendChild(script);
+    // Only load the script once to prevent duplicate declarations
+    if (!loaderLoadedRef.current && !document.querySelector(`script[src="${EMULATOR_LOADER_SRC}"]`)) {
+      loaderLoadedRef.current = true;
+      const script = document.createElement("script");
+      script.src = EMULATOR_LOADER_SRC;
+      script.async = true;
+      document.body.appendChild(script);
+    }
 
     return () => {
       try {
@@ -43,6 +50,8 @@ export default function GameEmulator({ game, romUrl }) {
       if (window.EJS_emulator) {
         window.EJS_emulator = null;
       }
+      // Reset the loader ref when changing games to allow reinitializing
+      loaderLoadedRef.current = false;
     };
   }, [game, romUrl]);
 
