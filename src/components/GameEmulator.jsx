@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from "react";
 
 const EMULATOR_LOADER_SRC = "https://cdn.emulatorjs.org/stable/data/loader.js";
+const scrollKeys = new Set(["ArrowUp", "ArrowDown", "Space"]);
 
 function resolveGameUrl(game, romUrl) {
   if (romUrl) return romUrl;
@@ -11,21 +12,20 @@ function resolveGameUrl(game, romUrl) {
 }
 
 export default function GameEmulator({ game, romUrl }) {
-  const containerRef = useRef(null);
   const loaderLoadedRef = useRef(false);
+  const containerRef = useRef(null);
 
   useEffect(() => {
     const gameUrl = resolveGameUrl(game, romUrl);
     const core = game?.categories?.[0]?.core;
 
     if (!gameUrl || !core) return;
-
     // Configure EmulatorJS before loading the script
     window.EJS_player = "#game";
     window.EJS_gameUrl = gameUrl;
     window.EJS_core = String(core);
     window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
-    window.EJS_language = "en"; // Set fallback language to prevent en-GB errors
+    // Don't set EJS_language to avoid 404 on missing localization files from CDN
     window.EJS_Buttons = {
       fullscreen: true,
     };
@@ -36,6 +36,10 @@ export default function GameEmulator({ game, romUrl }) {
       const script = document.createElement("script");
       script.src = EMULATOR_LOADER_SRC;
       script.async = true;
+      // Suppress errors from missing CDN resources
+      script.onerror = () => {
+        loaderLoadedRef.current = false;
+      };
       document.body.appendChild(script);
     }
 
@@ -58,18 +62,6 @@ export default function GameEmulator({ game, romUrl }) {
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-
-    const scrollKeys = new Set([
-      "ArrowUp",
-      "ArrowDown",
-      "ArrowLeft",
-      "ArrowRight",
-      " ",
-      "PageUp",
-      "PageDown",
-      "Home",
-      "End",
-    ]);
 
     const isEmulatorActive = () => {
       const active = document.activeElement;
