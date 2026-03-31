@@ -103,12 +103,12 @@ export default function GameEmulator({ game, romUrl }) {
     <div
       ref={containerRef}
       tabIndex={0}
-      className="rounded-xl border border-accent-secondary bg-main p-4 focus:outline-none"
+      className="w-full max-w-full overflow-hidden rounded-xl border border-accent-secondary bg-main p-4 focus:outline-none"
       aria-label="Game emulator"
     >
-      <div className="mx-auto w-full max-w-[640px]">
-        <div className="w-full aspect-[4/3]">
-          <div id="game" className="w-full h-full" />
+      <div className="mx-auto w-full max-w-[640px] overflow-hidden">
+        <div className="w-full aspect-[4/3] overflow-hidden rounded-lg">
+          <div id="game" className="h-full w-full max-w-full overflow-hidden" />
         </div>
       </div>
     </div>

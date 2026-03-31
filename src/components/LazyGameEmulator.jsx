@@ -6,9 +6,9 @@ import { Skeleton } from "@/components/ui/Skeleton";
 
 function EmulatorLoading() {
   return (
-    <div className="rounded-xl border border-accent-secondary bg-main p-4">
-      <div className="w-full max-w-[640px] mx-auto">
-        <div className="w-full aspect-[4/3] rounded-lg overflow-hidden">
+    <div className="w-full max-w-full overflow-hidden rounded-xl border border-accent-secondary bg-main p-4">
+      <div className="mx-auto w-full max-w-[640px] overflow-hidden">
+        <div className="w-full aspect-[4/3] overflow-hidden rounded-lg">
           <Skeleton className="h-full w-full" />
         </div>
       </div>
@@ -98,9 +98,9 @@ export default function LazyGameEmulator({ game, romUrl }) {
       {enabled ? (
         <GameEmulator game={game} romUrl={romUrl} />
       ) : (
-        <div className="rounded-xl border border-accent-secondary bg-main p-4">
-          <div className="w-full max-w-[640px] mx-auto">
-            <div className="w-full aspect-[4/3] rounded-lg overflow-hidden relative">
+        <div className="w-full max-w-full overflow-hidden rounded-xl border border-accent-secondary bg-main p-4">
+          <div className="mx-auto w-full max-w-[640px] overflow-hidden">
+            <div className="relative w-full aspect-[4/3] overflow-hidden rounded-lg">
               <Skeleton className="h-full w-full" />
               <div className="absolute inset-0 flex items-center justify-center">
                 <button

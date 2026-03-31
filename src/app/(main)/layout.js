@@ -10,8 +10,8 @@ export default function MainLayout ({ children }) {
       <Header/>
       <div className="flex flex-1 overflow-hidden">
         <SideBar/>
-        <div className="flex-1 overflow-auto bg-primary p-4 lg:p-8 rounded-tl-xl">
-          <main>{children}</main>
+        <div className="flex-1 min-w-0 overflow-auto overflow-x-hidden bg-primary p-4 lg:p-8 rounded-tl-xl">
+          <main className="min-w-0">{children}</main>
           <Footer/>
         </div>
       </div>
