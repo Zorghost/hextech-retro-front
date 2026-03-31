@@ -261,8 +261,8 @@ export default async function Page({ params }) {
           </div>
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="space-y-4">
+        <div className="grid gap-6 overflow-hidden xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="min-w-0 space-y-4">
             <LazyGameEmulator game={game} romUrl={romUrl} />
             <div className="md:hidden flex items-start gap-3 rounded-2xl border border-accent-secondary bg-main/70 px-4 py-3 text-sm text-slate-300">
               <DevicePhoneMobileIcon className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
@@ -276,7 +276,7 @@ export default async function Page({ params }) {
             </div>
           </div>
 
-          <aside className="space-y-4">
+          <aside className="min-w-0 space-y-4">
             <DetailCard icon={CpuChipIcon} title="Platform info">
               <dl className="space-y-3 text-sm text-slate-300">
                 <div className="flex min-w-0 flex-col gap-1 border-b border-accent-secondary/80 pb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
