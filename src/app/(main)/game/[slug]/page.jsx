@@ -1,5 +1,5 @@
 import { getGameBySlug, getRelatedGames } from "@/features/game/queries";
-import LazyGameEmulator from "@/components/LazyGameEmulator";
+import GameEmulator from "@/components/GameEmulator";
 import LazyDisqus from "@/components/LazyDisqus";
 import { getGameThumbnailUrl, getRomUrlWithBase } from "@/lib/assetUrls";
 import { getSiteUrl } from "@/lib/siteUrl";
@@ -263,7 +263,7 @@ export default async function Page({ params }) {
 
         <div className="grid gap-6 overflow-hidden xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="min-w-0 space-y-4">
-            <LazyGameEmulator game={game} romUrl={romUrl} />
+            <GameEmulator game={game} romUrl={romUrl} />
             <div className="md:hidden flex items-start gap-3 rounded-2xl border border-accent-secondary bg-main/70 px-4 py-3 text-sm text-slate-300">
               <DevicePhoneMobileIcon className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
               <span>
