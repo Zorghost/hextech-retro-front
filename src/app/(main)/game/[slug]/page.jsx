@@ -249,14 +249,14 @@ export default async function Page({ params }) {
               {game.description || "Load the ROM and keep a few nearby alternatives ready if you want another run after this one."}
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3 text-sm text-slate-200 sm:w-fit">
-            <div className="rounded-2xl border border-accent-secondary bg-main/70 px-4 py-3">
+          <div className="grid grid-cols-1 gap-3 text-sm text-slate-200 sm:grid-cols-2 sm:w-fit">
+            <div className="min-w-0 rounded-2xl border border-accent-secondary bg-main/70 px-4 py-3">
               <div className="text-xs uppercase tracking-[0.2em] text-accent">Platform</div>
-              <div className="mt-1 font-medium">{platformLabel}</div>
+              <div className="mt-1 break-words font-medium leading-tight">{platformLabel}</div>
             </div>
-            <div className="rounded-2xl border border-accent-secondary bg-main/70 px-4 py-3">
+            <div className="min-w-0 rounded-2xl border border-accent-secondary bg-main/70 px-4 py-3">
               <div className="text-xs uppercase tracking-[0.2em] text-accent">Core</div>
-              <div className="mt-1 font-medium">{emulatorCore ?? "Auto-detected"}</div>
+              <div className="mt-1 break-words font-medium leading-tight">{emulatorCore ?? "Auto-detected"}</div>
             </div>
           </div>
         </div>
@@ -279,19 +279,19 @@ export default async function Page({ params }) {
           <aside className="space-y-4">
             <DetailCard icon={CpuChipIcon} title="Platform info">
               <dl className="space-y-3 text-sm text-slate-300">
-                <div className="flex items-start justify-between gap-4 border-b border-accent-secondary/80 pb-3">
+                <div className="flex min-w-0 flex-col gap-1 border-b border-accent-secondary/80 pb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                   <dt className="text-accent">System</dt>
-                  <dd className="text-right font-medium text-slate-100">{platformLabel}</dd>
+                  <dd className="min-w-0 break-words font-medium text-slate-100 sm:text-right">{platformLabel}</dd>
                 </div>
-                <div className="flex items-start justify-between gap-4 border-b border-accent-secondary/80 pb-3">
+                <div className="flex min-w-0 flex-col gap-1 border-b border-accent-secondary/80 pb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                   <dt className="text-accent">Emulator core</dt>
-                  <dd className="text-right font-medium text-slate-100">{emulatorCore ?? "Auto-detected"}</dd>
+                  <dd className="min-w-0 break-words font-medium text-slate-100 sm:text-right">{emulatorCore ?? "Auto-detected"}</dd>
                 </div>
-                <div className="flex items-start justify-between gap-4 border-b border-accent-secondary/80 pb-3">
+                <div className="flex min-w-0 flex-col gap-1 border-b border-accent-secondary/80 pb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                   <dt className="text-accent">Added</dt>
-                  <dd className="text-right font-medium text-slate-100">{addedDate ?? "Recently"}</dd>
+                  <dd className="min-w-0 break-words font-medium text-slate-100 sm:text-right">{addedDate ?? "Recently"}</dd>
                 </div>
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                   <dt className="text-accent">ROM file</dt>
                   <dd className="max-w-[13rem] truncate text-right font-medium text-slate-100" title={romFilename ?? undefined}>
                     {romFilename ?? "Managed by storage"}
