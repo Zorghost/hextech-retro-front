@@ -180,18 +180,3 @@ export default function LazyGameEmulator({ game, romUrl }) {
     </div>
   );
 }
-                  className="text-sm bg-accent-gradient py-3 px-6 rounded-xl border border-yellow-400 uppercase touch-manipulation"
-                >
-                  Load &amp; Play
-                </button>
-              </div>
-            </div>
-            <p className="text-xs text-gray-400 mt-2 text-center">
-              Emulator loads on demand to improve performance.
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
