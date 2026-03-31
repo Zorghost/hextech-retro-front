@@ -25,7 +25,9 @@ export default function LazyGameEmulator({ game, romUrl }) {
   const [enabled, setEnabled] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [showMobileFullscreenButton, setShowMobileFullscreenButton] = useState(false);
+  const [emulatorError, setEmulatorError] = useState(null);
   const containerRef = useRef(null);
+  const isLoadingRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -57,24 +59,53 @@ export default function LazyGameEmulator({ game, romUrl }) {
 
     try {
       if (!document.fullscreenElement && typeof target.requestFullscreen === "function") {
-        await target.requestFullscreen();
+        await target.requestFullscreen().catch((error) => {
+          // Some browsers may deny fullscreen request silently or throw
+          console.warn("Fullscreen request denied:", error?.message);
+        });
       }
-    } catch {
-      // Ignore if browser blocks fullscreen request.
+    } catch (error) {
+      // Ignore if browser blocks fullscreen request
+      console.warn("Fullscreen error:", error?.message);
     }
 
+    // Only attempt orientation lock on browsers that explicitly support it
+    // Don't force orientation lock as it can cause issues on some iOS devices
     try {
-      if (window.screen?.orientation?.lock) {
-        await window.screen.orientation.lock("landscape");
+      if (
+        window.screen?.orientation?.lock &&
+        /android/i.test(navigator.userAgent) // Only lock on Android where it's more reliable
+      ) {
+        await window.screen.orientation.lock("landscape").catch(() => {
+          // Silently fail if orientation lock is not supported
+        });
       }
     } catch {
-      // Ignore unsupported orientation lock APIs.
+      // Ignore unsupported orientation lock APIs
     }
   }
 
   async function handleLoadAndPlay() {
-    await requestMobileFullscreenExperience();
-    setEnabled(true);
+    if (isLoadingRef.current) return;
+    
+    isLoadingRef.current = true;
+    setEmulatorError(null);
+    
+    try {
+      await requestMobileFullscreenExperience();
+    } catch (error) {
+      console.error("Error preparing fullscreen:", error);
+    } finally {
+      setEnabled(true);
+      isLoadingRef.current = false;
+    }
+  }
+
+  function handleEmulatorError(errorMessage) {
+    console.error("Emulator error:", errorMessage);
+    setEmulatorError(errorMessage);
+    setEnabled(false);
+    isLoadingRef.current = false;
   }
 
   return (
@@ -85,6 +116,7 @@ export default function LazyGameEmulator({ game, romUrl }) {
             type="button"
             onClick={requestMobileFullscreenExperience}
             className="text-xs bg-accent-gradient py-2 px-3 rounded-lg border border-yellow-400 uppercase touch-manipulation"
+            aria-label="Toggle fullscreen"
           >
             Fullscreen
           </button>
@@ -95,8 +127,25 @@ export default function LazyGameEmulator({ game, romUrl }) {
           Fullscreen is not supported on this browser.
         </p>
       ) : null}
+      {emulatorError ? (
+        <div className="mb-4 p-3 bg-red-900/30 border border-red-600 rounded-lg">
+          <p className="text-xs text-red-200 mb-2">
+            <strong>Error:</strong> {emulatorError}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setEmulatorError(null);
+              setEnabled(false);
+            }}
+            className="text-xs text-red-300 hover:text-red-100 underline"
+          >
+            Try again
+          </button>
+        </div>
+      ) : null}
       {enabled ? (
-        <GameEmulator game={game} romUrl={romUrl} />
+        <GameEmulator game={game} romUrl={romUrl} onError={handleEmulatorError} />
       ) : (
         <div className="w-full max-w-full overflow-hidden rounded-xl border border-accent-secondary bg-main p-4">
           <div className="mx-auto w-full max-w-[640px] overflow-hidden">
@@ -106,7 +155,8 @@ export default function LazyGameEmulator({ game, romUrl }) {
                 <button
                   type="button"
                   onClick={handleLoadAndPlay}
-                  className="text-sm bg-accent-gradient py-3 px-6 rounded-xl border border-yellow-400 uppercase touch-manipulation"
+                  disabled={isLoadingRef.current}
+                  className="text-sm bg-accent-gradient py-3 px-6 rounded-xl border border-yellow-400 uppercase touch-manipulation disabled:opacity-50"
                 >
                   Load &amp; Play
                 </button>
