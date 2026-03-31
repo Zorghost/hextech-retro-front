@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from "react";
 
 const EMULATOR_LOADER_SRC = "https://cdn.emulatorjs.org/stable/data/loader.js";
 const scrollKeys = new Set(["ArrowUp", "ArrowDown", "Space"]);
-const ONE_MINUTE = 60000;
 
 function resolveGameUrl(game, romUrl) {
   if (romUrl) return romUrl;
@@ -12,127 +11,123 @@ function resolveGameUrl(game, romUrl) {
   return `/${game.game_url}`;
 }
 
-function isMobileDevice() {
-  if (typeof window === "undefined") return false;
-  const prefersMobileViewport = window.matchMedia?.("(max-width: 768px)")?.matches;
-  const usesCoarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches;
-  return Boolean(prefersMobileViewport || usesCoarsePointer);
-}
-
 export default function GameEmulator({ game, romUrl, onError }) {
-  const loaderLoadedRef = useRef(false);
   const containerRef = useRef(null);
-  const timeoutIdRef = useRef(null);
+  const scriptRef = useRef(null);
+  const emulatorCreatedRef = useRef(false);
   const [hasError, setHasError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const isMobile = useRef(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  useEffect(() => {
-    isMobile.current = isMobileDevice();
-  }, []);
-
+  // Main emulator initialization effect
   useEffect(() => {
     const gameUrl = resolveGameUrl(game, romUrl);
     const core = game?.categories?.[0]?.core;
 
-    if (!gameUrl || !core) return;
+    if (!gameUrl || !core) {
+      console.log("GameEmulator: Missing gameUrl or core", { gameUrl, core });
+      return;
+    }
 
+    // Reset error state
     setHasError(false);
-    setIsLoading(true);
+    setErrorMsg("");
 
-    // Configure EmulatorJS before loading the script with mobile optimizations
+    // Clean up any previous script
+    if (scriptRef.current?.parentNode) {
+      scriptRef.current.parentNode.removeChild(scriptRef.current);
+      scriptRef.current = null;
+    }
+
+    // Destroy previous emulator instance
+    try {
+      if (window.EJS_emulator?.destroy) {
+        window.EJS_emulator.destroy();
+      }
+    } catch (err) {
+      console.warn("Error destroying previous emulator:", err);
+    }
+    window.EJS_emulator = null;
+    emulatorCreatedRef.current = false;
+
+    // Set up emulator configuration
     window.EJS_player = "#game";
     window.EJS_gameUrl = gameUrl;
     window.EJS_core = String(core);
     window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
     window.EJS_language = "en";
     window.EJS_Buttons = {
-      fullscreen: !isMobile.current, // Disable fullscreen button on mobile (use requestFullscreen API instead)
+      fullscreen: true,
     };
 
-    // Mobile-specific optimizations to reduce memory usage
-    if (isMobile.current) {
-      window.EJS_audioContextType = "webkit";
-      window.EJS_gamePadOptions = {
-        autoconnect: false,
-      };
-    }
+    // Create and load the script
+    const script = document.createElement("script");
+    script.src = EMULATOR_LOADER_SRC;
+    script.async = true;
+    scriptRef.current = script;
 
-    // Only load the script once to prevent duplicate declarations
-    if (!loaderLoadedRef.current && !document.querySelector(`script[src="${EMULATOR_LOADER_SRC}"]`)) {
-      loaderLoadedRef.current = true;
-      const script = document.createElement("script");
-      script.src = EMULATOR_LOADER_SRC;
-      script.async = true;
-
-      // Set a timeout to detect if emulator fails to load on mobile
-      const timeoutId = setTimeout(() => {
-        if (isLoading && isMobile.current && !window.EJS_emulator) {
-          console.error("Emulator failed to load within timeout on mobile device");
-          setIsLoading(false);
-          setHasError(true);
-          onError?.("Emulator loading timeout on mobile. Try closing other tabs and restarting.");
-        }
-      }, ONE_MINUTE);
-      timeoutIdRef.current = timeoutId;
-
-      script.onload = () => {
-        clearTimeout(timeoutIdRef.current);
-        setIsLoading(false);
+    const handleScriptLoad = () => {
+      console.log("GameEmulator: Script loaded, waiting for EJS_emulator to be created...");
+      
+      // Poll for emulator creation with timeout
+      let pollCount = 0;
+      const maxPolls = 50; // 5 seconds at 100ms intervals
+      
+      const pollInterval = setInterval(() => {
+        pollCount++;
         
-        // Monitor if emulator actually created successfully
-        const checkEmulatorReady = setInterval(() => {
-          if (window.EJS_emulator) {
-            clearInterval(checkEmulatorReady);
-          }
-        }, 100);
+        if (window.EJS_emulator && !emulatorCreatedRef.current) {
+          emulatorCreatedRef.current = true;
+          clearInterval(pollInterval);
+          console.log("GameEmulator: Emulator instance created successfully");
+          return;
+        }
 
-        setTimeout(() => clearInterval(checkEmulatorReady), 5000);
-      };
+        if (pollCount >= maxPolls) {
+          clearInterval(pollInterval);
+          console.error("GameEmulator: Timeout waiting for emulator instance");
+          setHasError(true);
+          setErrorMsg("Emulator instance failed to initialize. Try reloading the page.");
+          onError?.("Emulator instance failed to initialize");
+        }
+      }, 100);
+    };
 
-      script.onerror = () => {
-        clearTimeout(timeoutIdRef.current);
-        loaderLoadedRef.current = false;
-        setIsLoading(false);
-        setHasError(true);
-        onError?.("Failed to load emulator. Please check your connection.");
-      };
+    const handleScriptError = () => {
+      console.error("GameEmulator: Script failed to load from CDN");
+      setHasError(true);
+      setErrorMsg("Failed to load emulator from CDN. Check your internet connection.");
+      onError?.("Failed to load emulator script");
+    };
 
-      document.body.appendChild(script);
-    }
+    script.addEventListener("load", handleScriptLoad);
+    script.addEventListener("error", handleScriptError);
 
+    document.body.appendChild(script);
+
+    // Cleanup function
     return () => {
-      if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current);
+      if (scriptRef.current?.parentNode) {
+        scriptRef.current.parentNode.removeChild(scriptRef.current);
       }
+      
+      try {
+        if (window.EJS_emulator?.canvas) {
+          window.EJS_emulator.canvas = null;
+        }
+      } catch {}
 
       try {
-        if (window.EJS_emulator && typeof window.EJS_emulator.destroy === "function") {
+        if (window.EJS_emulator?.destroy) {
           window.EJS_emulator.destroy();
         }
-      } catch {
-        // ignore
-      }
+      } catch {}
 
-      // Force cleanup to help with memory management on mobile
-      if (window.EJS_emulator) {
-        try {
-          if (window.EJS_emulator.canvas) {
-            window.EJS_emulator.canvas = null;
-          }
-          if (window.EJS_emulator.context) {
-            window.EJS_emulator.context = null;
-          }
-        } catch {
-          // ignore
-        }
-        window.EJS_emulator = null;
-      }
-
-      loaderLoadedRef.current = false;
+      window.EJS_emulator = null;
+      emulatorCreatedRef.current = false;
     };
   }, [game, romUrl, onError]);
 
+  // Keyboard event handling
   useEffect(() => {
     const container = containerRef.current;
     if (!container || hasError) return;
@@ -180,19 +175,21 @@ export default function GameEmulator({ game, romUrl, onError }) {
         aria-label="Game emulator error"
       >
         <div className="mx-auto w-full max-w-[640px] overflow-hidden">
-          <div className="w-full aspect-[4/3] overflow-hidden rounded-lg bg-gray-900 flex items-center justify-center">
-            <div className="text-center text-white px-4">
-              <p className="text-sm mb-3">⚠️ Emulator Error</p>
-              <p className="text-xs text-gray-300 mb-4">
-                The emulator failed to load. This may be due to:
+          <div className="w-full aspect-[4/3] overflow-hidden rounded-lg bg-gray-900 flex flex-col items-center justify-center p-4">
+            <div className="text-center text-white">
+              <p className="text-sm mb-3 font-semibold">⚠️ Emulator Error</p>
+              <p className="text-xs text-gray-200 mb-3">{errorMsg}</p>
+              <p className="text-xs text-gray-400 mb-4">
+                Troubleshooting steps:
               </p>
-              <ul className="text-xs text-gray-400 text-left mb-4 space-y-1">
-                <li>• Low device memory</li>
-                <li>• Network connectivity issues</li>
-                <li>• Browser limitations</li>
+              <ul className="text-xs text-gray-400 text-left mb-4 space-y-1 inline-block">
+                <li>✓ Close other browser tabs</li>
+                <li>✓ Clear browser cache</li>
+                <li>✓ Check internet connection</li>
+                <li>✓ Try a different browser</li>
               </ul>
-              <p className="text-xs text-gray-500">
-                Try closing other tabs and refreshing the page.
+              <p className="text-xs text-gray-500 mt-4">
+                Still not working? Check the browser console (F12) for errors.
               </p>
             </div>
           </div>

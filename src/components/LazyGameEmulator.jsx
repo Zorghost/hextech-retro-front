@@ -25,9 +25,7 @@ export default function LazyGameEmulator({ game, romUrl }) {
   const [enabled, setEnabled] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [showMobileFullscreenButton, setShowMobileFullscreenButton] = useState(false);
-  const [emulatorError, setEmulatorError] = useState(null);
   const containerRef = useRef(null);
-  const isLoadingRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -48,33 +46,24 @@ export default function LazyGameEmulator({ game, romUrl }) {
   async function requestMobileFullscreenExperience() {
     if (typeof window === "undefined") return;
 
-    const prefersMobileViewport = window.matchMedia?.("(max-width: 768px)")?.matches;
-    const usesCoarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches;
-    const isMobile = Boolean(prefersMobileViewport || usesCoarsePointer);
-
-    if (!isMobile) return;
-
     const target = containerRef.current;
     if (!target) return;
 
     try {
       if (!document.fullscreenElement && typeof target.requestFullscreen === "function") {
         await target.requestFullscreen().catch((error) => {
-          // Some browsers may deny fullscreen request silently or throw
           console.warn("Fullscreen request denied:", error?.message);
         });
       }
     } catch (error) {
-      // Ignore if browser blocks fullscreen request
       console.warn("Fullscreen error:", error?.message);
     }
 
-    // Only attempt orientation lock on browsers that explicitly support it
-    // Don't force orientation lock as it can cause issues on some iOS devices
+    // Only attempt orientation lock on Android
     try {
       if (
         window.screen?.orientation?.lock &&
-        /android/i.test(navigator.userAgent) // Only lock on Android where it's more reliable
+        /android/i.test(navigator.userAgent)
       ) {
         await window.screen.orientation.lock("landscape").catch(() => {
           // Silently fail if orientation lock is not supported
@@ -86,26 +75,17 @@ export default function LazyGameEmulator({ game, romUrl }) {
   }
 
   async function handleLoadAndPlay() {
-    if (isLoadingRef.current) return;
-    
-    isLoadingRef.current = true;
-    setEmulatorError(null);
-    
     try {
       await requestMobileFullscreenExperience();
     } catch (error) {
       console.error("Error preparing fullscreen:", error);
-    } finally {
-      setEnabled(true);
-      isLoadingRef.current = false;
     }
+    setEnabled(true);
   }
 
   function handleEmulatorError(errorMessage) {
-    console.error("Emulator error:", errorMessage);
-    setEmulatorError(errorMessage);
-    setEnabled(false);
-    isLoadingRef.current = false;
+    console.error("LazyGameEmulator: Emulator error:", errorMessage);
+    // Error is displayed in GameEmulator component
   }
 
   return (
@@ -127,23 +107,6 @@ export default function LazyGameEmulator({ game, romUrl }) {
           Fullscreen is not supported on this browser.
         </p>
       ) : null}
-      {emulatorError ? (
-        <div className="mb-4 p-3 bg-red-900/30 border border-red-600 rounded-lg">
-          <p className="text-xs text-red-200 mb-2">
-            <strong>Error:</strong> {emulatorError}
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setEmulatorError(null);
-              setEnabled(false);
-            }}
-            className="text-xs text-red-300 hover:text-red-100 underline"
-          >
-            Try again
-          </button>
-        </div>
-      ) : null}
       {enabled ? (
         <GameEmulator game={game} romUrl={romUrl} onError={handleEmulatorError} />
       ) : (
@@ -155,8 +118,7 @@ export default function LazyGameEmulator({ game, romUrl }) {
                 <button
                   type="button"
                   onClick={handleLoadAndPlay}
-                  disabled={isLoadingRef.current}
-                  className="text-sm bg-accent-gradient py-3 px-6 rounded-xl border border-yellow-400 uppercase touch-manipulation disabled:opacity-50"
+                  className="text-sm bg-accent-gradient py-3 px-6 rounded-xl border border-yellow-400 uppercase touch-manipulation"
                 >
                   Load &amp; Play
                 </button>
