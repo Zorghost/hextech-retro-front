@@ -18,6 +18,7 @@ export default function GameEmulator({ game, romUrl }) {
     window.EJS_gameUrl = gameUrl;
     window.EJS_core = String(core);
     window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
+    window.EJS_fullscreenOnLoaded = true;
 
     const script = document.createElement("script");
     script.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
