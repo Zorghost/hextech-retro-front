@@ -1,8 +1,28 @@
 'use client'
-import React, { useEffect, useRef } from "react"
+import React, { useEffect, useRef, useState } from "react"
 
 export default function GameEmulator({ game, romUrl }) {
   const scriptRef = useRef(null);
+  const [isCompactViewport, setIsCompactViewport] = useState(false);
+
+  useEffect(() => {
+    const updateViewportMode = () => {
+      const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+      const narrowScreen = window.matchMedia("(max-width: 767px)").matches;
+      const touchDevice = typeof navigator !== "undefined" && navigator.maxTouchPoints > 0;
+
+      setIsCompactViewport(Boolean((coarsePointer || touchDevice) && narrowScreen));
+    };
+
+    updateViewportMode();
+    window.addEventListener("resize", updateViewportMode);
+    window.addEventListener("orientationchange", updateViewportMode);
+
+    return () => {
+      window.removeEventListener("resize", updateViewportMode);
+      window.removeEventListener("orientationchange", updateViewportMode);
+    };
+  }, []);
 
   useEffect(() => {
     // Resolve game URL - use romUrl if provided, otherwise use game.game_url
@@ -18,6 +38,11 @@ export default function GameEmulator({ game, romUrl }) {
     window.EJS_gameUrl = gameUrl;
     window.EJS_core = String(core);
     window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
+    if (isCompactViewport) {
+      window.EJS_browserMode = "mobile";
+    } else {
+      delete window.EJS_browserMode;
+    }
 
     const script = document.createElement("script");
     script.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
@@ -69,14 +94,21 @@ export default function GameEmulator({ game, romUrl }) {
 
       // Clear the emulator from window
       window.EJS_emulator = null;
+      delete window.EJS_browserMode;
     };
-  }, [game, romUrl]);
+  }, [game, romUrl, isCompactViewport]);
 
 
   return (
-    <div className="bg-main flex justify-center rounded-xl">
-      <div style={{ width: "640px", height: "480px", maxWidth: "100%" }}>
-        <div id="game"></div>
+    <div className="bg-main flex justify-center overflow-hidden rounded-xl">
+      <div
+        className="w-full"
+        style={{
+          maxWidth: isCompactViewport ? "360px" : "640px",
+          aspectRatio: "4 / 3",
+        }}
+      >
+        <div id="game" className="h-full w-full"></div>
       </div>
     </div>
   );
