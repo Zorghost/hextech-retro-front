@@ -1,17 +1,33 @@
 'use client'
 import React, { useEffect, useRef, useState } from "react"
 
+const EMULATOR_SCRIPT_SRC = "https://cdn.emulatorjs.org/stable/data/loader.js";
+
+function configureEmulator({ gameUrl, core, isCompactViewport }) {
+  window.EJS_player = "#game";
+  window.EJS_gameUrl = gameUrl;
+  window.EJS_core = String(core);
+  window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
+
+  if (isCompactViewport) {
+    window.EJS_browserMode = "mobile";
+  } else {
+    delete window.EJS_browserMode;
+  }
+}
+
 export default function GameEmulator({ game, romUrl }) {
   const scriptRef = useRef(null);
+  const containerRef = useRef(null);
+  const viewportRef = useRef(false);
   const [isCompactViewport, setIsCompactViewport] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     const updateViewportMode = () => {
-      const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
-      const narrowScreen = window.matchMedia("(max-width: 767px)").matches;
-      const touchDevice = typeof navigator !== "undefined" && navigator.maxTouchPoints > 0;
-
-      setIsCompactViewport(Boolean((coarsePointer || touchDevice) && narrowScreen));
+      const compact = window.matchMedia("(max-width: 767px)").matches;
+      viewportRef.current = compact;
+      setIsCompactViewport(compact);
     };
 
     updateViewportMode();
@@ -34,26 +50,38 @@ export default function GameEmulator({ game, romUrl }) {
       return;
     }
 
-    window.EJS_player = "#game";
-    window.EJS_gameUrl = gameUrl;
-    window.EJS_core = String(core);
-    window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
-    if (isCompactViewport) {
-      window.EJS_browserMode = "mobile";
-    } else {
-      delete window.EJS_browserMode;
+    let isMounted = true;
+    setLoadError("");
+    configureEmulator({ gameUrl, core, isCompactViewport: viewportRef.current });
+
+    if (containerRef.current) {
+      containerRef.current.innerHTML = "";
     }
 
     const script = document.createElement("script");
-    script.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
+    script.src = EMULATOR_SCRIPT_SRC;
     script.async = true;
     scriptRef.current = script;
+    script.onload = () => {
+      if (!isMounted) {
+        script.remove();
+      }
+    };
+    script.onerror = () => {
+      if (!isMounted) {
+        return;
+      }
+
+      console.error("Failed to load EmulatorJS");
+      setLoadError("Failed to load the game engine. Please try again.");
+    };
+
     document.body.appendChild(script);
 
-    // Cleanup function
     return () => {
+      isMounted = false;
+
       try {
-        // Pause the emulator first if it exists
         if (window.EJS_emulator?.pause) {
           window.EJS_emulator.pause();
         }
@@ -62,16 +90,6 @@ export default function GameEmulator({ game, romUrl }) {
       }
 
       try {
-        // Try to stop all audio contexts
-        if (window.EJS_emulator?.canvas) {
-          window.EJS_emulator.canvas = null;
-        }
-      } catch (err) {
-        console.warn("Error clearing canvas:", err);
-      }
-
-      try {
-        // Destroy the emulator instance
         if (window.EJS_emulator?.destroy) {
           window.EJS_emulator.destroy();
         }
@@ -79,24 +97,25 @@ export default function GameEmulator({ game, romUrl }) {
         console.warn("Error destroying emulator:", err);
       }
 
-      // Stop all audio elements to ensure no background sound
-      const audioElements = document.querySelectorAll('audio');
-      audioElements.forEach(audio => {
+      const audioElements = containerRef.current?.querySelectorAll("audio") ?? [];
+      audioElements.forEach((audio) => {
         audio.pause();
         audio.currentTime = 0;
       });
 
-      // Remove the script tag from the DOM
+      if (containerRef.current) {
+        containerRef.current.innerHTML = "";
+      }
+
       if (scriptRef.current?.parentNode) {
         scriptRef.current.parentNode.removeChild(scriptRef.current);
         scriptRef.current = null;
       }
 
-      // Clear the emulator from window
       window.EJS_emulator = null;
       delete window.EJS_browserMode;
     };
-  }, [game, romUrl, isCompactViewport]);
+  }, [game, romUrl]);
 
 
   return (
@@ -108,7 +127,13 @@ export default function GameEmulator({ game, romUrl }) {
           aspectRatio: "4 / 3",
         }}
       >
-        <div id="game" className="h-full w-full"></div>
+        <div ref={containerRef} id="game" className="h-full w-full">
+          {loadError ? (
+            <div className="flex h-full items-center justify-center rounded-xl border border-accent-secondary bg-main/90 p-4 text-sm text-slate-200">
+              {loadError}
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );
