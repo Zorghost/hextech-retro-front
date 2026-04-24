@@ -4,6 +4,7 @@ import { getGameThumbnailUrl } from "@/lib/assetUrls";
 import Image from "next/image";
 import Link from "next/link";
 import EmptyState from "@/components/ui/EmptyState";
+import { notFound } from "next/navigation";
 
 const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
 
@@ -38,11 +39,19 @@ export async function generateMetadata({ params, searchParams }) {
 
 export default async function Page({ params, searchParams }) {
   const page = parseInt(searchParams?.page, 10) || 1;
+  const category = await getCategoryBySlug(params.slug);
+
+  if (!category) {
+    notFound();
+  }
+
   const { games, totalPages, currentPage } = await getGamesByCategory(params.slug, page);
+  const categorySubtitle = category.core ? `Core: ${category.core}` : `Browse ${category.title} retro games.`;
 
   return(
     <div>
-      <h1 className='font-display text-3xl mb-4 capitalize'>{params.slug}</h1>
+      <h1 className="font-display text-3xl mb-2">{category.title}</h1>
+      <p className="mb-4 text-sm text-white/70">{categorySubtitle}</p>
       <nav className='rounded-md w-full mb-4'>
         <ol className='list-reset flex'>
           <li>
@@ -51,7 +60,7 @@ export default async function Page({ params, searchParams }) {
           <li>
             <span className='text-gray-500 mx-2'>/</span>
           </li>
-          <li className='text-gray-500 capitalize'>{params.slug}</li>
+          <li className='text-gray-500'>{category.title}</li>
         </ol>
       </nav>
 
