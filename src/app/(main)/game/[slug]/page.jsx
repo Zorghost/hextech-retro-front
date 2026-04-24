@@ -50,21 +50,6 @@ function getKeyboardTips(platformLabel) {
   ];
 }
 
-function getMobileControlTip(core, platformLabel) {
-  switch (core) {
-    case "nintendo-64":
-      return "N64 titles use shoulder buttons and C-buttons heavily, so fullscreen helps keep the touch overlay usable.";
-    case "nintendo-ds":
-      return "DS games feel better in fullscreen because the second screen and touch controls need extra space.";
-    case "psp":
-      return "PSP games are easiest to play in landscape fullscreen with the touch overlay visible.";
-    case "sega-saturn":
-      return "Saturn games can use a lot of buttons, so keep the overlay visible and fullscreen when possible.";
-    default:
-      return `Use fullscreen and the in-player menu to adjust the touch layout for ${platformLabel ?? "this system"}.`;
-  }
-}
-
 function buildBrokenRomHref(game, canonical, supportEmail) {
   if (!supportEmail) {
     return `${canonical}#comments`;
@@ -209,7 +194,6 @@ export default async function Page({ params }) {
       }).format(new Date(game.created_at))
     : null;
   const controlTips = getKeyboardTips(platformLabel);
-  const mobileControlTip = getMobileControlTip(primaryCategory?.core, platformLabel);
   const reportHref = buildBrokenRomHref(game, canonical, supportEmail);
   const reportCtaLabel = supportEmail ? "Email a broken-ROM report" : "Report it in comments";
   const categories = Array.isArray(game.categories) ? game.categories : [];
@@ -283,8 +267,8 @@ export default async function Page({ params }) {
             <div className="md:hidden flex items-start gap-3 rounded-2xl border border-accent-secondary bg-main/70 px-4 py-3 text-sm text-slate-300">
               <DevicePhoneMobileIcon className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
               <span>
-                Rotate to <strong className="text-slate-100">landscape</strong>, tap{" "}
-                <strong className="text-slate-100">Fullscreen</strong>, and the touch overlay will stay easier to reach.
+                Rotate to <strong className="text-slate-100">landscape</strong> and tap{" "}
+                <strong className="text-slate-100">Load &amp; Play</strong> — touch controls appear on screen automatically.
               </span>
             </div>
             <div className="hidden md:block rounded-2xl border border-accent-secondary bg-main/70 px-4 py-3 text-sm text-slate-300">
@@ -321,9 +305,8 @@ export default async function Page({ params }) {
                 <div>
                   <p className="mb-2 text-xs uppercase tracking-[0.18em] text-accent">Touch / mobile</p>
                   <ul className="space-y-2">
-                    <li>The emulator opens in touch mode on phones and tablets, with fullscreen enabled on load.</li>
-                    <li>Use the in-player fullscreen button if your browser exits out of immersive mode.</li>
-                    <li>{mobileControlTip}</li>
+                    <li>A virtual gamepad overlay appears automatically once the ROM loads — no extra setup needed.</li>
+                    <li>Tap the screen once if the overlay disappears. Use the emulator settings to reposition it.</li>
                   </ul>
                 </div>
                 <div className="border-t border-accent-secondary/60 pt-4">
