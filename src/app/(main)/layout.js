@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default function MainLayout ({ children }) {
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex min-h-dvh flex-col">
       <Header/>
       <div className="flex flex-1 overflow-hidden">
         <SideBar/>

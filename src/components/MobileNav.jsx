@@ -22,6 +22,7 @@ const FOCUSABLE_SELECTOR = [
 
 export default function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
+  const [headerOffset, setHeaderOffset] = useState(57);
   const pathname = usePathname();
   const menuId = useId();
   const toggleButtonRef = useRef(null);
@@ -63,6 +64,32 @@ export default function MobileNav() {
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const measureHeaderOffset = () => {
+      const headerElement = toggleButtonRef.current?.closest("header");
+      const nextOffset = headerElement?.getBoundingClientRect().height ?? 57;
+      setHeaderOffset(Math.max(48, Math.round(nextOffset)));
+    };
+
+    measureHeaderOffset();
+
+    const headerElement = toggleButtonRef.current?.closest("header");
+    const resizeObserver = typeof ResizeObserver !== "undefined" && headerElement
+      ? new ResizeObserver(measureHeaderOffset)
+      : null;
+
+    if (resizeObserver && headerElement) {
+      resizeObserver.observe(headerElement);
+    } else {
+      window.addEventListener("resize", measureHeaderOffset);
+    }
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", measureHeaderOffset);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isOpen) {
@@ -146,7 +173,8 @@ export default function MobileNav() {
         <nav
           id={menuId}
           ref={menuRef}
-          className="fixed top-[57px] h-dvh left-0 right-0 z-50 bg-main p-4"
+          className="fixed left-0 right-0 z-50 bg-main p-4"
+          style={{ top: `${headerOffset}px`, height: `calc(100dvh - ${headerOffset}px)` }}
           aria-label="Mobile navigation"
         >
           <ul className="bg-muted flex flex-col mb-6">
