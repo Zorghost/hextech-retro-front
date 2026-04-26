@@ -5,12 +5,16 @@ const EMULATOR_SCRIPT_SRC = "https://cdn.emulatorjs.org/stable/data/loader.js";
 
 
 export default function GameEmulator({ game, romUrl }) {
+  const core = game?.categories?.[0]?.core;
 
   useEffect(() => {
+    if (!romUrl) {
+      return undefined;
+    }
 
     window.EJS_player = "#game";
-    window.EJS_gameUrl = gameUrl;
-    window.EJS_core = String(core);
+    window.EJS_gameUrl = romUrl;
+    window.EJS_core = core ? String(core) : "";
     window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
 
     const script = document.createElement("script");
@@ -19,7 +23,11 @@ export default function GameEmulator({ game, romUrl }) {
 
     document.body.appendChild(script);
 
-  }, [game, romUrl]);
+    return () => {
+      script.remove();
+    };
+
+  }, [core, romUrl]);
 
 
   return(
