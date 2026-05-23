@@ -15,6 +15,19 @@ function buildUrlFromHeaders() {
   return `${proto}://${host}`;
 }
 
+function buildHostFromUrl(siteUrl) {
+  try {
+    return new URL(siteUrl).hostname;
+  } catch {
+    return null;
+  }
+}
+
 export function getRequestSiteUrl() {
   return buildUrlFromHeaders() || getSiteUrl();
+}
+
+export function getRequestHost() {
+  const siteUrl = getRequestSiteUrl();
+  return buildHostFromUrl(siteUrl);
 }
