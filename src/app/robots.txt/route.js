@@ -1,19 +1,15 @@
-import { getRequestHost, getRequestSiteUrl } from "@/lib/requestSiteUrl";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 export const dynamic = "force-dynamic";
 
 export function GET() {
-  const siteUrl = getRequestSiteUrl();
-  const host = getRequestHost();
+  const siteUrl = getSiteUrl();
   const robotsTxt = [
     "User-Agent: *",
     "Allow: /",
-    host ? `Host: ${host}` : null,
     `Sitemap: ${siteUrl}/sitemap.xml`,
     "",
-  ]
-    .filter(Boolean)
-    .join("\n");
+  ].join("\n");
 
   return new Response(robotsTxt, {
     headers: {
