@@ -1,5 +1,7 @@
 import Image from "next/image";
 import EmptyState from "@/components/ui/EmptyState";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import GameCard from "@/components/ui/GameCard";
 import { getLatestPublishedGames } from "@/features/game/queries";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 import { getSiteUrl } from "@/lib/siteUrl";
@@ -30,20 +32,15 @@ export default async function Page() {
   const games = await getLatestPublishedGames(10);
 
   return (
-    <div>
-      <h1 className="font-display text-3xl mb-4">New games</h1>
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-display text-3xl md:text-4xl">New games</h1>
+        <p className="mt-2 max-w-2xl text-sm text-slate-300 md:text-base">
+          Browse the latest additions to the Retro Hextech library.
+        </p>
+      </div>
 
-      <nav className="rounded-md w-full mb-4">
-        <ol className="list-reset flex">
-          <li>
-            <Link href="/">Home</Link>
-          </li>
-          <li>
-            <span className="text-gray-500 mx-2">/</span>
-          </li>
-          <li className="text-gray-500">New games</li>
-        </ol>
-      </nav>
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "New games" }]} />
 
       {games.length === 0 ? (
         <EmptyState
@@ -61,20 +58,7 @@ export default async function Page() {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {games.map((game) => (
-            <Link href={`/game/${game.slug}`} key={game.id} className="group">
-              <div className="relative w-full aspect-square overflow-hidden rounded-lg border-accent-secondary border mb-2">
-                <Image
-                  src={getGameThumbnailUrl(game.image)}
-                  alt={game.title}
-                  fill
-                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
-                  unoptimized={isProxyImageSource}
-                  quality={80}
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              </div>
-              <p className="font-medium">{game.title}</p>
-            </Link>
+            <GameCard key={game.id} game={game} showDescription={false} />
           ))}
         </div>
       )}

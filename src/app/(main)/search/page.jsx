@@ -1,13 +1,55 @@
-import Image from "next/image";
 import Link from "next/link";
 import { getSearchDiscoveryData, getSearchResults } from "@/features/game/queries";
-import { getGameThumbnailUrl } from "@/lib/assetUrls";
 import EmptyState from "@/components/ui/EmptyState";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import { getSiteUrl } from "@/lib/siteUrl";
+import Script from "next/script";
+import { buildBreadcrumbJsonLd, safeJsonLdStringify } from "@/features/game/seo";
+import GameCard from "@/components/ui/GameCard";
+
+export async function generateMetadata({ searchParams }) {
+  const siteUrl = getSiteUrl();
+  const rawQuery = searchParams?.q;
+  const query = typeof rawQuery === "string" ? rawQuery.trim() : "";
+  const canonical = query ? `${siteUrl}/search?q=${encodeURIComponent(query)}` : `${siteUrl}/search`;
+  const title = query ? `Search results for “${query}”` : "Search";
+  const description = query
+    ? `Search Retro Hextech for ${query} and browse related games, platforms, and trending picks.`
+    : "Search Retro Hextech by game title or platform and discover related retro games, trending searches, and quick starts.";
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical,
+    },
+    robots: {
+      index: false,
+      follow: true,
+      googleBot: {
+        index: false,
+        follow: true,
+        noimageindex: true,
+      },
+    },
+    openGraph: {
+      type: "website",
+      url: canonical,
+      title,
+      description,
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
+  };
+}
 
 function DiscoverySection({ title, children }) {
   return (
     <section className="rounded-2xl border border-accent-secondary bg-main/60 p-5">
-      <h2 className="font-display text-xl">{title}</h2>
+      <h2 className="font-display text-xl text-slate-100">{title}</h2>
       <div className="mt-3">{children}</div>
     </section>
   );
@@ -65,6 +107,18 @@ function buildSuggestedQueries(query, discoveryData) {
 export default async function Page(req) {
   const searchQuery = req.searchParams.q;
   const safeQuery = typeof searchQuery === "string" ? searchQuery.trim() : "";
+  const siteUrl = getSiteUrl();
+  const breadcrumbItems = safeQuery
+    ? [
+        { name: "Home", href: "/" },
+        { name: "Search", href: "/search" },
+        { name: `Results for “${safeQuery}”`, href: `/search?q=${encodeURIComponent(safeQuery)}` },
+      ]
+    : [
+        { name: "Home", href: "/" },
+        { name: "Search", href: "/search" },
+      ];
+  const breadcrumbLd = buildBreadcrumbJsonLd(breadcrumbItems, siteUrl);
 
   const [games, discoveryData] = await Promise.all([
     safeQuery ? getSearchResults(safeQuery) : Promise.resolve([]),
@@ -78,22 +132,47 @@ export default async function Page(req) {
   const suggestedQueries = buildSuggestedQueries(safeQuery, discoveryData);
   const featuredGames = discoveryData.featuredGames.slice(0, 4);
   const platformChips = discoveryData.platformChips.slice(0, 8);
+  const hasResults = games.length > 0;
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-2xl md:text-3xl mb-4">
-        {safeQuery ? `Search results for “${safeQuery}”` : "Search"}
-      </h1>
+      <Script
+        id="search-breadcrumb-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(breadcrumbLd) }}
+      />
+      <Breadcrumbs
+        items={safeQuery
+          ? [
+              { label: "Home", href: "/" },
+              { label: "Search", href: "/search" },
+              { label: `Results for “${safeQuery}”` },
+            ]
+          : [
+              { label: "Home", href: "/" },
+              { label: "Search" },
+            ]}
+      />
+      <div>
+        <h1 className="font-display text-2xl md:text-3xl">
+          {safeQuery ? `Search results for “${safeQuery}”` : "Search"}
+        </h1>
+        {!safeQuery ? (
+          <p className="mt-2 max-w-2xl text-sm text-slate-300 md:text-base">
+            Start with a title to jump straight into results, or use the trending searches and platform chips below to explore.
+          </p>
+        ) : null}
+      </div>
 
       {!safeQuery ? (
         <>
           <EmptyState
             title="Start with a title or jump into a lane"
-            description="Search works best when you begin with a game title. If you are still exploring, use the trending searches or platform chips below."
+            description="Search works best when you begin with a game title. If you are still exploring, use the trending searches, platform chips, or quick starts below."
             action={
               <Link
                 href="/category"
-                className="inline-flex items-center justify-center rounded-[24px] border border-accent px-5 py-3 text-base font-medium"
+                className="inline-flex items-center justify-center rounded-[24px] border border-accent bg-accent-secondary px-5 py-3 text-base font-medium text-slate-50 transition hover:border-accent hover:bg-primary"
               >
                 Browse categories
               </Link>
@@ -128,43 +207,31 @@ export default async function Page(req) {
             <DiscoverySection title="Quick starts">
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 {featuredGames.map((game) => (
-                  <Link key={game.id} href={`/game/${game.slug}`} className="group">
-                    <div className="relative mb-2 aspect-square overflow-hidden rounded-xl border border-accent-secondary bg-primary">
-                      <Image
-                        src={getGameThumbnailUrl(game.image)}
-                        alt={game.title}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        sizes="(max-width: 768px) 50vw, 220px"
-                        quality={50}
-                        unoptimized
-                      />
-                    </div>
-                    {game.categoryTitle ? <p className="text-sm text-accent">{game.categoryTitle}</p> : null}
-                    <p className="font-medium">{game.title}</p>
-                  </Link>
+                  <GameCard key={game.id} game={game} showDescription={false} />
                 ))}
               </div>
             </DiscoverySection>
           ) : null}
         </>
-      ) : games.length === 0 ? (
+      ) : !hasResults ? (
         <>
-          <div className="text-accent mb-4">0 results</div>
+          <div className="rounded-2xl border border-accent-secondary bg-main/60 p-4 text-sm text-slate-300">
+            No games matched “{safeQuery}”. Try a shorter title, use one of the related searches below, or browse directly by platform.
+          </div>
           <EmptyState
             title="No results"
-            description={`No games matched “${safeQuery}”. Try a shorter title, use one of the related searches below, or browse directly by platform.`}
+            description="Search suggestions are based on recent titles and trending queries. Try a broader term or pick one of the related options below."
             action={
               <div className="flex flex-wrap gap-3">
                 <Link
                   href="/search"
-                  className="inline-flex items-center justify-center rounded-[24px] border border-accent px-5 py-3 text-base font-medium"
+                  className="inline-flex items-center justify-center rounded-[24px] border border-accent bg-accent-secondary px-5 py-3 text-base font-medium text-slate-50 transition hover:border-accent hover:bg-primary"
                 >
                   Reset search
                 </Link>
                 <Link
                   href="/category"
-                  className="inline-flex items-center justify-center rounded-[24px] border border-accent px-5 py-3 text-base font-medium"
+                  className="inline-flex items-center justify-center rounded-[24px] border border-accent px-5 py-3 text-base font-medium transition hover:border-accent hover:bg-primary"
                 >
                   Browse categories
                 </Link>
@@ -200,27 +267,7 @@ export default async function Page(req) {
             <DiscoverySection title="Jump into something instead">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
                 {featuredGames.map((game) => (
-                  <Link
-                    key={game.id}
-                    href={`/game/${game.slug}`}
-                    className="flex items-center gap-3 rounded-xl border border-accent-secondary bg-main p-3 transition hover:border-accent hover:bg-primary"
-                  >
-                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-primary">
-                      <Image
-                        src={getGameThumbnailUrl(game.image)}
-                        alt={game.title}
-                        fill
-                        className="object-cover"
-                        sizes="64px"
-                        quality={50}
-                        unoptimized
-                      />
-                    </div>
-                    <div>
-                      {game.categoryTitle ? <p className="text-xs uppercase tracking-[0.2em] text-accent">{game.categoryTitle}</p> : null}
-                      <p className="font-medium">{game.title}</p>
-                    </div>
-                  </Link>
+                  <GameCard key={game.id} game={game} compact showDescription={false} />
                 ))}
               </div>
             </DiscoverySection>
@@ -228,31 +275,14 @@ export default async function Page(req) {
         </>
       ) : (
         <>
-          <div className="text-accent mb-4">{`${games.length} results`}</div>
+          <div className="rounded-2xl border border-accent-secondary bg-main/60 p-4 text-sm text-slate-300">
+            {`${games.length} result${games.length === 1 ? "" : "s"} found for “${safeQuery}”.`}
+          </div>
 
           <ul className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {games.map((game) => (
               <li key={game.id}>
-                <Link
-                  href={`/game/${game.slug}`}
-                  className="group block"
-                >
-                  <div className="relative mb-2 aspect-square w-full overflow-hidden rounded-lg border border-accent-secondary bg-main">
-                    <Image
-                      src={getGameThumbnailUrl(game.image)}
-                      alt={game.title}
-                      fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 180px"
-                      quality={50}
-                      unoptimized
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-medium leading-snug">{game.title}</p>
-                    <p className="line-clamp-2 text-sm text-white/75">{game.description}</p>
-                  </div>
-                </Link>
+                <GameCard game={game} />
               </li>
             ))}
           </ul>

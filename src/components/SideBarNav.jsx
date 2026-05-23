@@ -1,64 +1,82 @@
 "use client";
+
 import { HomeIcon, CubeIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function SideBarNav({ categoryMenu }) {
-  const activeSegment = usePathname();
+export default function SideBarNav({ categoryMenu = [] }) {
+  const pathname = usePathname();
 
   const mainMenuItems = [
     {
       name: "Home",
       icon: HomeIcon,
-      slug: "/",
+      href: "/",
     },
     {
       name: "New",
       icon: CubeIcon,
-      slug: "/new-games",
+      href: "/new-games",
     },
   ];
 
-  return (
-    <>
-      <div className="text-accent text-xs mb-2">MENU</div>
-      <ul className="bg-muted flex flex-col gap-2 mb-6">
-        {mainMenuItems.map((item, i) => (
-          <li key={i}>
-            <Link
-              href={item.slug}
-              className={`text-sm tracking-wide flex gap-2 items-center p-1 px-2 ${
-                activeSegment === `${item.slug}`
-                  ? "active bg-primary rounded-md"
-                  : "incative hover:bg-primary rounded-md"
-              }`}
-            >
-              <item.icon className="size-6 text-accent" />
-              {item.name}
-            </Link>
-          </li>
-        ))}
-      </ul>
+  const isMainItemActive = (href) => pathname === href;
+  const isCategoryItemActive = (slug) => pathname === `/category/${slug}`;
 
-      <div className="text-accent text-xs mb-2">CATEGORIES</div>
-      <ul className="bg-muted flex flex-col gap-2 mb-6">
-        {categoryMenu.map((item) => (
-          <li key={item.id}>
-            <Link
-              href={`/category/${item.slug}`}
-              className={`text-sm tracking-wide flex gap-2 items-center p-1 px-2 ${
-                activeSegment === `/category/${item.slug}`
-                  ? "active bg-primary rounded-md"
-                  : "incative hover:bg-primary rounded-md"
-              }`}
-            >
-              <div className={`categoryicon ${item.slug}`}></div>
-              {item.title}{" "}
-              <span className="text-accent">({item?._count?.games ?? 0})</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </>
+  return (
+    <nav className="space-y-5" aria-label="Sidebar navigation">
+      <section>
+        <div className="mb-2 text-xs uppercase tracking-[0.2em] text-accent">Menu</div>
+        <ul className="space-y-2 rounded-2xl border border-accent-secondary bg-main/60 p-3">
+          {mainMenuItems.map((item) => {
+            const active = isMainItemActive(item.href);
+
+            return (
+              <li key={item.name}>
+                <Link
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-sm tracking-wide transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-main ${
+                    active
+                      ? "border-accent bg-accent-secondary text-slate-50"
+                      : "border-transparent text-slate-300 hover:border-accent-secondary hover:bg-primary hover:text-white"
+                  }`}
+                >
+                  <item.icon className="size-5 shrink-0 text-accent" aria-hidden="true" />
+                  <span>{item.name}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section>
+        <div className="mb-2 text-xs uppercase tracking-[0.2em] text-accent">Categories</div>
+        <ul className="space-y-2 rounded-2xl border border-accent-secondary bg-main/60 p-3">
+          {categoryMenu.map((item) => {
+            const active = isCategoryItemActive(item.slug);
+
+            return (
+              <li key={item.id}>
+                <Link
+                  href={`/category/${item.slug}`}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-sm tracking-wide transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-main ${
+                    active
+                      ? "border-accent bg-accent-secondary text-slate-50"
+                      : "border-transparent text-slate-300 hover:border-accent-secondary hover:bg-primary hover:text-white"
+                  }`}
+                >
+                  <div className={`categoryicon ${item.slug}`} aria-hidden="true" />
+                  <span className="min-w-0 flex-1 truncate">{item.title}</span>
+                  <span className="text-accent">({item?._count?.games ?? 0})</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    </nav>
   );
 }

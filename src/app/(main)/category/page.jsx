@@ -1,16 +1,52 @@
 import { getGameCategories } from "@/features/game/queries"
 import EmptyState from "@/components/ui/EmptyState";
-import Image from "next/image";
 import Link from "next/link";
-import { getCategoryImageUrl } from "@/lib/assetUrls";
+import { getSiteUrl } from "@/lib/siteUrl";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import Script from "next/script";
+import { buildBreadcrumbJsonLd, safeJsonLdStringify } from "@/features/game/seo";
+import GameCard from "@/components/ui/GameCard";
 
-const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
+export async function generateMetadata() {
+  const siteUrl = getSiteUrl();
+  const canonical = `${siteUrl}/category`;
+
+  return {
+    title: "Categories",
+    description: "Browse retro game categories and jump into platform collections across SNES, Nintendo, Sega, Atari, and more.",
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      type: "website",
+      url: canonical,
+      title: "Categories",
+      description: "Browse retro game categories and jump into platform collections across SNES, Nintendo, Sega, Atari, and more.",
+    },
+    twitter: {
+      card: "summary",
+      title: "Categories",
+      description: "Browse retro game categories and jump into platform collections across SNES, Nintendo, Sega, Atari, and more.",
+    },
+  };
+}
 
 export default async function Page() {
   const categories = await getGameCategories();
+  const siteUrl = getSiteUrl();
+  const breadcrumbLd = buildBreadcrumbJsonLd([
+    { name: "Home", href: "/" },
+    { name: "Categories", href: "/category" },
+  ], siteUrl);
 
   return(
     <div>
+      <Script
+        id="category-index-breadcrumb-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(breadcrumbLd) }}
+      />
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Categories" }]} />
       <h1 className="font-display text-3xl mb-4">Categories</h1>
       {categories.length === 0 ? (
         <EmptyState
@@ -27,21 +63,14 @@ export default async function Page() {
         />
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-6">
-        {categories.map((game) => (
-          <Link href={`/category/${game.slug}`} key={game.id} className="group">
-            <div className="relative w-full aspect-square overflow-hidden rounded-lg border-accent-secondary border">
-              <Image
-                src={getCategoryImageUrl(game.image)}
-                alt={game.title}
-                fill
-                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 180px"
-                unoptimized={isProxyImageSource}
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-            </div>
-            <p>{game.title}</p>
-            <p>{game.description}</p>
-          </Link>
+        {categories.map((category) => (
+          <GameCard
+            key={category.id}
+            game={category}
+            href={`/category/${category.slug}`}
+            showCategoryTitle={false}
+            showDescription
+          />
         ))}
 
         </div>

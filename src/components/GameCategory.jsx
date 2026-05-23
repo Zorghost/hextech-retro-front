@@ -1,9 +1,6 @@
 import { ChevronRightIcon } from "@heroicons/react/24/outline"
-import Image from "next/image"
 import Link from "next/link"
-import { getGameThumbnailUrl } from "@/lib/assetUrls";
-
-const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
+import GameCard from "@/components/ui/GameCard";
 
 export default function GameCategory({category}) {
   if (!category) {
@@ -28,23 +25,9 @@ export default function GameCategory({category}) {
       {games.length === 0 ? (
         <p className="text-sm text-accent">No games yet.</p>
       ) : (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
         {games.map((game) => (
-          <Link href={`/game/${game.slug}`} key={game.id} className="group">
-            <div className="relative mb-2 aspect-square overflow-hidden rounded-lg border border-accent-secondary bg-main">
-              <Image
-                src={getGameThumbnailUrl(game.image)}
-                fill
-                alt={game.title}
-                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                unoptimized={isProxyImageSource}
-                quality={80}
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-            </div>
-              {game.categoryTitle ? <p className="text-sm text-accent">{game.categoryTitle}</p> : null}
-              <p className="font-medium">{game.title}</p>
-          </Link>
+          <GameCard key={game.id} game={game} showDescription={false} />
         ))}
       </div>
       )}

@@ -4,7 +4,12 @@ import { getGameThumbnailUrl } from "@/lib/assetUrls";
 import Image from "next/image";
 import Link from "next/link";
 import EmptyState from "@/components/ui/EmptyState";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import Pagination from "@/components/ui/Pagination";
+import GameCard from "@/components/ui/GameCard";
 import { notFound } from "next/navigation";
+import Script from "next/script";
+import { buildBreadcrumbJsonLd, safeJsonLdStringify } from "@/features/game/seo";
 
 const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
 
@@ -15,7 +20,9 @@ export async function generateMetadata({ params, searchParams }) {
 
   const titleBase = category?.title || params.slug;
   const title = page > 1 ? `${titleBase} (Page ${page})` : titleBase;
-  const description = category?.core || `Browse ${titleBase} retro games.`;
+  const description = category?.core
+    ? `Browse ${titleBase} retro games on Retro Hextech. Core: ${category.core}.`
+    : `Browse ${titleBase} retro games on Retro Hextech.`;
 
   const canonical =
     page > 1
@@ -34,6 +41,11 @@ export async function generateMetadata({ params, searchParams }) {
       title,
       description,
     },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
   };
 }
 
@@ -47,24 +59,28 @@ export default async function Page({ params, searchParams }) {
 
   const { games, totalPages, currentPage } = await getGamesByCategory(params.slug, page);
   const categorySubtitle = category.core ? `Core: ${category.core}` : `Browse ${category.title} retro games.`;
+  const siteUrl = getSiteUrl();
+  const breadcrumbLd = buildBreadcrumbJsonLd([
+    { name: "Home", href: "/" },
+    { name: "Categories", href: "/category" },
+    { name: category.title, href: `/category/${params.slug}${currentPage > 1 ? `?page=${currentPage}` : ""}` },
+  ], siteUrl);
 
-  return(
-    <div>
-      <h1 className="font-display text-3xl mb-2">{category.title}</h1>
-      <p className="mb-4 text-sm text-white/70">{categorySubtitle}</p>
-      <nav className='rounded-md w-full mb-4'>
-        <ol className='list-reset flex'>
-          <li>
-            <Link href='/'>Home</Link>
-          </li>
-          <li>
-            <span className='text-gray-500 mx-2'>/</span>
-          </li>
-          <li className='text-gray-500'>{category.title}</li>
-        </ol>
-      </nav>
+  return (
+    <div className="space-y-6">
+      <Script
+        id="category-breadcrumb-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(breadcrumbLd) }}
+      />
+      <div>
+        <h1 className="font-display text-3xl md:text-4xl">{category.title}</h1>
+        <p className="mt-2 max-w-2xl text-sm text-slate-300 md:text-base">{categorySubtitle}</p>
+      </div>
 
-      <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4'>
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Categories", href: "/category" }, { label: category.title }]} />
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {games.length === 0 ? (
           <div className="col-span-full">
             <EmptyState
@@ -82,56 +98,19 @@ export default async function Page({ params, searchParams }) {
           </div>
         ) : (
           games.map((game) => (
-            <Link href={`/game/${game.slug}`} key={game.id} className='group'>
-              <div className='relative w-full aspect-square overflow-hidden rounded-lg border-accent-secondary border mb-2'>
-                <Image
-                  src={getGameThumbnailUrl(game.image)}
-                  alt={game.title}
-                  fill
-                  sizes='(max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw'
-                  unoptimized={isProxyImageSource}
-                  quality={80}
-                  className='object-cover transition-transform duration-300 group-hover:scale-105'
-                />
-              </div>
-              <p className='font-medium'>{game.title}</p>
-            </Link>
+            <GameCard key={game.id} game={game} showDescription={false} />
           ))
         )}
       </div>
 
 
       {totalPages > 1 && (
-        <div className='flex justify-center mt-8'>
-          <nav className='inline-flex rounded-md shadow'>
-            {currentPage > 1 && (
-              <Link href={`/category/${params.slug}?page=${currentPage - 1}`}
-              className='px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50'>
-                Previous
-              </Link>
-            )}
-            {[...Array(totalPages).keys()].map((pageNum) => (
-              <Link href={`/category/${params.slug}?page=${pageNum + 1}`}
-              key={pageNum + 1}
-              className={`px-3 py-2 border border-gray-300 bg-white text-sm font-medium ${
-                currentPage === pageNum + 1
-                ? 'text-indigo-600 bg-indigo-50'
-                : 'text-gray-500 hover:bg-gray-50'
-              }`}>
-              {pageNum + 1}
-              </Link>
-            ))}
-
-            {currentPage < totalPages && (
-              <Link href={`/category/${params.slug}?page=${currentPage + 1}`}
-              className='px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium 
-              text-gray-500 hover:bg-gray-50'>
-                Next
-              </Link>
-            )}
-
-          </nav>
-        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          ariaLabel="Category pagination"
+          getHref={(pageNumber) => `/category/${params.slug}?page=${pageNumber}`}
+        />
       )}
 
 

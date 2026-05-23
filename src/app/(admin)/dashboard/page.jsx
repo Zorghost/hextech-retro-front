@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 import EmptyState from "@/components/ui/EmptyState";
+import Pagination from "@/components/ui/Pagination";
 
 export const revalidate = 0;
 
@@ -22,30 +23,6 @@ function buildDashboardHref({ q, category, published, page }) {
 
   const query = params.toString();
   return query.length ? `/dashboard?${query}` : "/dashboard";
-}
-
-function buildPageItems(currentPage, totalPages) {
-  const safeCurrent = Math.min(Math.max(currentPage, 1), totalPages);
-
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, index) => ({ type: "page", page: index + 1 }));
-  }
-
-  const items = [];
-  const pushPage = (page) => items.push({ type: "page", page });
-  const pushEllipsis = (key) => items.push({ type: "ellipsis", key });
-
-  pushPage(1);
-
-  const windowStart = Math.max(2, safeCurrent - 1);
-  const windowEnd = Math.min(totalPages - 1, safeCurrent + 1);
-
-  if (windowStart > 2) pushEllipsis("left");
-  for (let page = windowStart; page <= windowEnd; page++) pushPage(page);
-  if (windowEnd < totalPages - 1) pushEllipsis("right");
-
-  pushPage(totalPages);
-  return items;
 }
 
 export default async function Page({ searchParams }) {
@@ -72,8 +49,6 @@ export default async function Page({ searchParams }) {
     gamesPage.page < gamesPage.totalPages
       ? buildDashboardHref({ q, category, published, page: String(gamesPage.page + 1) })
       : null;
-
-  const pageItems = buildPageItems(gamesPage.page, gamesPage.totalPages);
 
   return (
     <>
@@ -204,66 +179,15 @@ export default async function Page({ searchParams }) {
           )}
 
           {gamesPage.totalPages > 1 && (
-            <div className="flex items-center justify-between gap-4">
-              <div className="text-sm text-accent">
-                Page {gamesPage.page} of {gamesPage.totalPages}
-              </div>
-
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                {prevHref ? (
-                  <Link href={prevHref} className="text-sm border border-accent py-2 px-3 rounded-xl">
-                    ← Prev
-                  </Link>
-                ) : (
-                  <span className="text-sm border border-accent py-2 px-3 rounded-xl opacity-50 cursor-not-allowed">
-                    ← Prev
-                  </span>
-                )}
-
-                <div className="flex items-center gap-2">
-                  {pageItems.map((item) => {
-                    if (item.type === "ellipsis") {
-                      return (
-                        <span key={item.key} className="text-sm text-accent px-2">
-                          …
-                        </span>
-                      );
-                    }
-
-                    const isActive = item.page === gamesPage.page;
-                    const href = buildDashboardHref({ q, category, published, page: String(item.page) });
-
-                    return isActive ? (
-                      <span
-                        key={item.page}
-                        className="text-sm border border-accent bg-accent-secondary py-2 px-3 rounded-xl"
-                        aria-current="page"
-                      >
-                        {item.page}
-                      </span>
-                    ) : (
-                      <Link
-                        key={item.page}
-                        href={href}
-                        className="text-sm border border-accent py-2 px-3 rounded-xl"
-                      >
-                        {item.page}
-                      </Link>
-                    );
-                  })}
-                </div>
-
-                {nextHref ? (
-                  <Link href={nextHref} className="text-sm border border-accent py-2 px-3 rounded-xl">
-                    Next →
-                  </Link>
-                ) : (
-                  <span className="text-sm border border-accent py-2 px-3 rounded-xl opacity-50 cursor-not-allowed">
-                    Next →
-                  </span>
-                )}
-              </div>
-            </div>
+            <Pagination
+              currentPage={gamesPage.page}
+              totalPages={gamesPage.totalPages}
+              ariaLabel="Dashboard pagination"
+              previousLabel="← Prev"
+              nextLabel="Next →"
+              showPageSummary
+              getHref={(pageNumber) => buildDashboardHref({ q, category, published, page: String(pageNumber) })}
+            />
           )}
 
 

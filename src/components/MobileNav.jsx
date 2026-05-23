@@ -156,9 +156,9 @@ export default function MobileNav() {
       <button
         ref={toggleButtonRef}
         type="button"
-        className="lg:hidden"
+        className="rounded-md lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-main"
         onClick={() => setIsOpen((open) => !open)}
-        aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
+        aria-label={isOpen ? "Close site navigation" : "Open site navigation"}
         aria-expanded={isOpen}
         aria-controls={menuId}
       >
@@ -173,20 +173,25 @@ export default function MobileNav() {
         <nav
           id={menuId}
           ref={menuRef}
-          className="fixed left-0 right-0 z-50 bg-main p-4"
+          className="fixed left-0 right-0 z-50 border-t border-accent-secondary bg-main/95 p-4 backdrop-blur-xl"
           style={{ top: `${headerOffset}px`, height: `calc(100dvh - ${headerOffset}px)` }}
-          aria-label="Mobile navigation"
+          aria-label="Mobile site navigation"
         >
-          <ul className="bg-muted flex flex-col mb-6">
+          <ul className="mb-6 space-y-2 rounded-2xl border border-accent-secondary bg-primary/70 p-2 shadow-2xl">
             {mobileNavItems.map((item) => (
               <li key={item.name} className="border-accent">
                 <Link
                   href={item.path}
                   onClick={() => setIsOpen(false)}
-                        className="text-xl font-medium hover:bg-accent rounded-md flex gap-4 items-center border-b border-accent py-4 px-6"
+                  aria-current={pathname === item.path ? "page" : undefined}
+                  className={`flex items-center gap-4 rounded-xl border border-transparent px-4 py-4 text-lg font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-main ${
+                    pathname === item.path
+                      ? "border-accent bg-accent-secondary text-slate-50"
+                      : "text-slate-200 hover:border-accent-secondary hover:bg-main hover:text-white"
+                  }`}
                 >
                   <item.icon
-                    className="h-6 w-6 text-white"
+                    className="h-6 w-6 text-accent"
                     aria-hidden="true"
                   />
                   {item.name}

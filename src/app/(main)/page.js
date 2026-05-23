@@ -1,6 +1,7 @@
 import HeroSlider from "@/components/Sliders/HeroSlider";
 import CategorySlider from "@/components/Sliders/CategorySlider";
 import GameCategory from "@/components/GameCategory";
+import ThemeCard from "@/components/ui/ThemeCard";
 import { safeJsonLdStringify } from "@/features/game/seo";
 import { getSiteUrl } from "@/lib/siteUrl";
 import {
@@ -71,20 +72,19 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(websiteJsonLd) }}
       />
       <HeroSlider />
-      <section className="mb-6 rounded-lg border border-accent-secondary bg-main/70 p-4 md:p-5">
-        <h2 className="font-display mb-2 text-lg md:text-xl">Play Classic Retro Games Online</h2>
-        <p className="text-sm text-white/90 md:text-base">
+      <ThemeCard surfaceClassName="bg-main/60" className="mb-6" title="Play Classic Retro Games Online" titleClassName="md:text-xl">
+        <p className="text-sm text-slate-300 md:text-base">
           Retro Hextech is a browser-based retro gaming library with playable classics across SNES, Nintendo 64,
           Sega Mega Drive, Atari, and more. Discover fan favorites, browse by platform, and launch games instantly
           with no download.
         </p>
-      </section>
+      </ThemeCard>
       <CategorySlider categories={allCategoreis} />
       {recentlyAdded?.games?.length ? <GameCategory category={recentlyAdded} /> : null}
       {popularThisWeek?.games?.length ? <GameCategory category={popularThisWeek} /> : null}
       {platformSpotlights.length ? (
         <section className="mb-6">
-          <h2 className="font-display mb-4">Platform spotlights</h2>
+          <h2 className="font-display mb-4 text-slate-100">Platform spotlights</h2>
           <div className="space-y-2">
             {platformSpotlights.map((spotlight) => (
               spotlight?.games?.length ? <GameCategory key={spotlight.slug ?? spotlight.title} category={spotlight} /> : null

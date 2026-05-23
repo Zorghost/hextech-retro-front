@@ -802,9 +802,17 @@ const getCachedSearchDiscoveryData = unstable_cache(
     ]);
 
     const featuredGames = dedupeSearchGames(latestGames, featuredLimit);
+    const autocompleteGames = dedupeSearchGames(latestGames, suggestionLimit);
 
     return {
-      autocompleteGames: [],
+      autocompleteGames: autocompleteGames.map((game) => ({
+        id: game.id,
+        title: game.title,
+        slug: game.slug,
+        image: game.image,
+        description: game.description ?? null,
+        categoryTitle: game.categoryTitle ?? null,
+      })),
       trendingSearches: dedupeSearchTerms(
         latestGames.map((game) => game.title),
         suggestionLimit,

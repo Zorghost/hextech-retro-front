@@ -135,6 +135,24 @@ export default function Search({
 
   const displayedResults = trimmedSearchTerm ? liveResults : [];
   const fallbackSuggestions = trimmedSearchTerm && !displayedResults.length && !isLoading ? gameSuggestions : [];
+  const suggestionItems = trimmedSearchTerm
+    ? (displayedResults.length ? displayedResults : fallbackSuggestions)
+    : [];
+
+  useEffect(() => {
+    if (!suggestionItems.length) {
+      setActiveIndex(-1);
+      return;
+    }
+
+    setActiveIndex((currentIndex) => {
+      if (currentIndex < 0) {
+        return currentIndex;
+      }
+
+      return Math.min(currentIndex, suggestionItems.length - 1);
+    });
+  }, [suggestionItems.length]);
 
   const platformMatches = useMemo(() => {
     if (!normalizedSearchTerm) {
@@ -147,7 +165,7 @@ export default function Search({
   }, [normalizedSearchTerm, platformChips]);
 
   const visibleTrendingSearches = trendingSearches.slice(0, 6);
-  const showEmptyMessage = Boolean(trimmedSearchTerm) && hasFetched && displayedResults.length === 0 && fallbackSuggestions.length === 0;
+  const showEmptyMessage = Boolean(trimmedSearchTerm) && hasFetched && !isLoading && displayedResults.length === 0;
   const shouldShowDropdown = isOpen && (
     Boolean(trimmedSearchTerm)
     || visibleTrendingSearches.length > 0
@@ -191,7 +209,7 @@ export default function Search({
       return;
     }
 
-    const items = displayedResults.length ? displayedResults : fallbackSuggestions;
+    const items = suggestionItems;
 
     if (!items.length) {
       return;
@@ -200,13 +218,40 @@ export default function Search({
     if (event.key === "ArrowDown") {
       event.preventDefault();
       setIsOpen(true);
-      setActiveIndex((currentIndex) => Math.min(currentIndex + 1, items.length - 1));
+      setActiveIndex((currentIndex) => {
+        if (currentIndex < 0) {
+          return 0;
+        }
+
+        return (currentIndex + 1) % items.length;
+      });
       return;
     }
 
     if (event.key === "ArrowUp") {
       event.preventDefault();
-      setActiveIndex((currentIndex) => Math.max(currentIndex - 1, 0));
+      setIsOpen(true);
+      setActiveIndex((currentIndex) => {
+        if (currentIndex < 0) {
+          return items.length - 1;
+        }
+
+        return (currentIndex - 1 + items.length) % items.length;
+      });
+      return;
+    }
+
+    if (event.key === "Home") {
+      event.preventDefault();
+      setIsOpen(true);
+      setActiveIndex(0);
+      return;
+    }
+
+    if (event.key === "End") {
+      event.preventDefault();
+      setIsOpen(true);
+      setActiveIndex(items.length - 1);
       return;
     }
 
@@ -284,7 +329,7 @@ export default function Search({
             <div className="border-b border-accent-secondary px-2 py-2">
               <div className="flex items-center justify-between px-2 pb-2">
                 <p className="text-xs uppercase tracking-[0.2em] text-accent">
-                  {displayedResults.length ? "Live results" : "Autocomplete"}
+                  {displayedResults.length ? "Live results" : fallbackSuggestions.length ? "Suggested games" : "No matches yet"}
                 </p>
                 {isLoading ? <p className="text-xs text-white/60">Searching...</p> : null}
               </div>
@@ -334,7 +379,18 @@ export default function Search({
                       onClick={() => handleSuggestionSelect(game.slug)}
                       className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition ${activeIndex === index ? "bg-main" : "hover:bg-main"}`}
                     >
+                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-accent-secondary bg-main">
+                        <Image
+                          src={getLiveSearchImageUrl(game.image)}
+                          alt={game.title}
+                          fill
+                          sizes="56px"
+                          unoptimized={isProxyImageSource}
+                          className="object-cover"
+                        />
+                      </div>
                       <span className="min-w-0 flex-1 truncate font-medium text-white">{game.title}</span>
+                      {game.categoryTitle ? <span className="hidden text-xs uppercase tracking-[0.2em] text-accent md:inline">{game.categoryTitle}</span> : null}
                       <span className="hidden text-xs text-accent md:inline">Open game</span>
                     </button>
                   ))}
@@ -345,7 +401,9 @@ export default function Search({
 
           {showEmptyMessage ? (
             <div className="border-b border-accent-secondary px-4 py-3 text-sm text-white/70">
-              No close title matches yet. Search the full catalog or jump into a platform below.
+              {fallbackSuggestions.length
+                ? `No live results for “${trimmedSearchTerm}” yet. Try one of the suggestions above or search the full catalog.`
+                : `No results for “${trimmedSearchTerm}”. Try a shorter title or browse by platform below.`}
             </div>
           ) : null}
 

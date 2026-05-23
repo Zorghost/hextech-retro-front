@@ -1,6 +1,8 @@
 import { getGameBySlug, getRelatedGames } from "@/features/game/queries";
 import GameEmulator from "@/components/GameEmulator";
 import LazyDisqus from "@/components/LazyDisqus";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import ThemeCard from "@/components/ui/ThemeCard";
 import { getGameThumbnailUrl, getRomUrlWithBase } from "@/lib/assetUrls";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { safeJsonLdStringify } from "@/features/game/seo";
@@ -69,22 +71,6 @@ function buildBrokenRomHref(game, canonical, supportEmail) {
   );
 
   return `mailto:${supportEmail}?subject=${subject}&body=${body}`;
-}
-
-function DetailCard({ icon: Icon, title, children }) {
-  return (
-    <section className="rounded-2xl border border-accent-secondary bg-main/90 p-5">
-      <div className="mb-3 flex items-center gap-3">
-        {Icon ? (
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-accent-secondary bg-accent-secondary/70 text-slate-100">
-            <Icon className="h-5 w-5" aria-hidden="true" />
-          </span>
-        ) : null}
-        <h2 className="font-display text-lg">{title}</h2>
-      </div>
-      {children}
-    </section>
-  );
 }
 
 export async function generateMetadata({ params }) {
@@ -206,29 +192,15 @@ export default async function Page({ params }) {
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(breadcrumbLd) }}
       />
 
-      <nav className="rounded-md w-full">
-        <ol className="list-reset flex">
-          <li>
-            <Link href="/">Home</Link>
-          </li>
-          <li>
-            <span className="text-gray-500 mx-2">/</span>
-          </li>
-          <li>
-            {primaryCategory ? (
-              <Link href={`/category/${primaryCategory.slug}`}>{primaryCategory.title}</Link>
-            ) : (
-              <span className="text-gray-500">Category</span>
-            )}
-          </li>
-          <li>
-            <span className="text-gray-500 mx-2">/</span>
-          </li>
-          <li>
-            <span className="text-gray-500">{game?.title}</span>
-          </li>
-        </ol>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          primaryCategory
+            ? { label: primaryCategory.title, href: `/category/${primaryCategory.slug}` }
+            : { label: "Category" },
+          { label: game.title },
+        ]}
+      />
 
       <section className="rounded-[28px] border border-accent-secondary bg-[radial-gradient(circle_at_top,_rgba(68,97,113,0.35),_rgba(3,19,34,0.96)_55%)] p-4 sm:p-6 md:p-8">
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -238,7 +210,7 @@ export default async function Page({ params }) {
                 <Link
                   key={category.id}
                   href={`/category/${category.slug}`}
-                  className="rounded-full border border-accent px-3 py-1 text-xs uppercase tracking-[0.2em] text-slate-200 transition hover:border-slate-200 hover:text-white"
+                  className="rounded-full border border-accent-secondary bg-main/60 px-3 py-1 text-xs uppercase tracking-[0.2em] text-slate-300 transition hover:border-accent hover:bg-primary hover:text-white"
                 >
                   {category.title}
                 </Link>
@@ -277,7 +249,7 @@ export default async function Page({ params }) {
           </div>
 
           <aside className="min-w-0 space-y-4">
-            <DetailCard icon={CpuChipIcon} title="Platform info">
+            <ThemeCard icon={CpuChipIcon} title="Platform info">
               <dl className="space-y-3 text-sm text-slate-300">
                 <div className="flex min-w-0 flex-col gap-1 border-b border-accent-secondary/80 pb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                   <dt className="text-accent">System</dt>
@@ -298,9 +270,9 @@ export default async function Page({ params }) {
                   </dd>
                 </div>
               </dl>
-            </DetailCard>
+            </ThemeCard>
 
-            <DetailCard icon={CommandLineIcon} title="Controls">
+            <ThemeCard icon={CommandLineIcon} title="Controls">
               <div className="space-y-4 text-sm leading-6 text-slate-300">
                 <div>
                   <p className="mb-2 text-xs uppercase tracking-[0.18em] text-accent">Touch / mobile</p>
@@ -318,9 +290,9 @@ export default async function Page({ params }) {
                   </ul>
                 </div>
               </div>
-            </DetailCard>
+            </ThemeCard>
 
-            <DetailCard icon={ExclamationTriangleIcon} title="Broken ROM reporting">
+            <ThemeCard icon={ExclamationTriangleIcon} title="Broken ROM reporting">
               <p className="text-sm leading-6 text-slate-300">
                 If the ROM hangs, shows a blank screen, or boots with missing audio, include your device, browser, and what happened right after loading.
               </p>
@@ -338,10 +310,10 @@ export default async function Page({ params }) {
                   Open comments
                 </a>
               </div>
-            </DetailCard>
+            </ThemeCard>
 
             {relatedGames.length ? (
-              <DetailCard title="Related games">
+              <ThemeCard title="Related games">
                 <div className="space-y-3">
                   {relatedGames.map((relatedGame) => (
                     <Link
@@ -369,7 +341,7 @@ export default async function Page({ params }) {
                     </Link>
                   ))}
                 </div>
-              </DetailCard>
+              </ThemeCard>
             ) : null}
           </aside>
         </div>
