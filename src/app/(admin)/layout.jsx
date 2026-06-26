@@ -1,6 +1,6 @@
 export const metadata = {
   title: "TheNextGameStation",
-  description: "TheNextGameStation - Admin",
+  description: "Retro Hextech admin dashboard for managing games, uploads, categories, and publishing settings from a protected control panel.",
   robots: {
     index: false,
     follow: false,

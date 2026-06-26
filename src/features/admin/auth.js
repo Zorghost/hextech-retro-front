@@ -17,17 +17,19 @@ function getAdminAllowlist() {
     .filter(Boolean);
 }
 
-export async function requireAdmin({ redirectTo = "/login" } = {}) {
-  const session = await auth();
+export function isAdminSession(session) {
   const email = normalizeEmail(session?.user?.email);
   const role = session?.user?.role;
 
-  if (!email) redirect(redirectTo);
+  if (!email) return false;
 
   const allowlist = getAdminAllowlist();
-  const isAdmin = role === "admin" || allowlist.includes(email);
+  return role === "admin" || allowlist.includes(email);
+}
 
-  if (!isAdmin) redirect(redirectTo);
+export async function requireAdmin({ redirectTo = "/login" } = {}) {
+  const session = await auth();
+  if (!isAdminSession(session)) redirect(redirectTo);
 
   return session;
 }

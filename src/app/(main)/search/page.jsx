@@ -4,7 +4,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import { getSiteUrl } from "@/lib/siteUrl";
 import Script from "next/script";
-import { buildBreadcrumbJsonLd, safeJsonLdStringify } from "@/features/game/seo";
+import { buildBreadcrumbJsonLd, buildMetaDescription, safeJsonLdStringify } from "@/features/game/seo";
 import GameCard from "@/components/ui/GameCard";
 
 export async function generateMetadata({ searchParams }) {
@@ -14,8 +14,14 @@ export async function generateMetadata({ searchParams }) {
   const canonical = query ? `${siteUrl}/search?q=${encodeURIComponent(query)}` : `${siteUrl}/search`;
   const title = query ? `Search results for “${query}”` : "Search";
   const description = query
-    ? `Search Retro Hextech for ${query} and browse related games, platforms, and trending picks.`
-    : "Search Retro Hextech by game title or platform and discover related retro games, trending searches, and quick starts.";
+    ? buildMetaDescription(
+        `Search Retro Hextech for ${query} game matches.`,
+        ["Browse related platforms, trending picks, and quick starts."]
+      )
+    : buildMetaDescription(
+        "Search Retro Hextech by game title or platform and discover related retro games, trending searches, and quick starts.",
+        ["Jump straight into browser-playable titles."]
+      );
 
   return {
     title,

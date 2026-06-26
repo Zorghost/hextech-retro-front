@@ -5,7 +5,7 @@ import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import ThemeCard from "@/components/ui/ThemeCard";
 import { getGameThumbnailUrl, getRomUrlWithBase } from "@/lib/assetUrls";
 import { getSiteUrl } from "@/lib/siteUrl";
-import { safeJsonLdStringify } from "@/features/game/seo";
+import { buildMetaDescription, safeJsonLdStringify } from "@/features/game/seo";
 import { notFound } from "next/navigation";
 import {
   CommandLineIcon,
@@ -77,7 +77,7 @@ export async function generateMetadata({ params }) {
   const game = await getGameBySlug(params.slug);
   const siteUrl = getSiteUrl();
   const defaultDescription =
-    "Play classic retro games online for free — browse our Atari, SNES, Sega and Nintendo collections.";
+    "Play classic retro games online in your browser with instant launch, platform details, and related classics to try next.";
 
   if (!game) {
     return {
@@ -90,7 +90,17 @@ export async function generateMetadata({ params }) {
   }
 
   const title = game.title || "Retro game";
-  const description = game.description || defaultDescription;
+  const primaryCategory = game?.categories?.[0];
+  const emulatorCore = formatCoreLabel(primaryCategory?.core);
+  const description = buildMetaDescription(
+    game.description,
+    [
+      `Play ${title} on Retro Hextech, a browser-based retro gaming library.`,
+      primaryCategory?.title ? `Platform: ${primaryCategory.title}.` : null,
+      emulatorCore ? `Core: ${emulatorCore}.` : null,
+    ],
+    defaultDescription
+  );
 
   const canonical = `${siteUrl}/game/${game.slug}`;
   const rawImageUrl = game.image ? getGameThumbnailUrl(game.image) : undefined;

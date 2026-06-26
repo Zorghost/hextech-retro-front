@@ -19,6 +19,83 @@ function isValidUploadFile(value) {
   return value && value instanceof File && value.name && value.size > 0;
 }
 
+function normalizeInputString(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeSlug(value) {
+  return normalizeInputString(value).toLowerCase();
+}
+
+function isValidSlug(value) {
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
+}
+
+function parsePositiveInt(value) {
+  const parsed = Number.parseInt(String(value ?? ""), 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function validateGameFormInput({ id, title, slug, description, categoryId }) {
+  const normalizedTitle = normalizeInputString(title);
+  const normalizedSlug = normalizeSlug(slug);
+  const normalizedDescription = normalizeInputString(description);
+  const normalizedCategoryId = normalizeInputString(categoryId);
+  const parsedCategoryId = normalizedCategoryId ? parsePositiveInt(normalizedCategoryId) : null;
+
+  if (id !== null && !Number.isInteger(id)) {
+    return { error: "Invalid game ID." };
+  }
+
+  if (!normalizedTitle) {
+    return { error: "Title is required." };
+  }
+
+  if (normalizedTitle.length > 200) {
+    return { error: "Title must be 200 characters or fewer." };
+  }
+
+  if (!normalizedSlug) {
+    return { error: "Slug is required." };
+  }
+
+  if (!isValidSlug(normalizedSlug)) {
+    return {
+      error: "Slug can only contain lowercase letters, numbers, and hyphens.",
+    };
+  }
+
+  if (normalizedSlug.length > 200) {
+    return { error: "Slug must be 200 characters or fewer." };
+  }
+
+  if (!normalizedDescription) {
+    return { error: "Description is required." };
+  }
+
+  if (normalizedDescription.length > 5000) {
+    return { error: "Description must be 5000 characters or fewer." };
+  }
+
+  if (normalizedCategoryId && !parsedCategoryId) {
+    return { error: "Category is invalid." };
+  }
+
+  if (!parsedCategoryId) {
+    return { error: "Category is required." };
+  }
+
+  return {
+    value: {
+      id,
+      title: normalizedTitle,
+      slug: normalizedSlug,
+      description: normalizedDescription,
+      categoryId: parsedCategoryId,
+    },
+  };
+}
+
 function parsePositiveIntEnv(name, fallbackValue) {
   const raw = process.env[name];
   if (!isNonEmptyString(raw)) return fallbackValue;
@@ -218,12 +295,34 @@ export async function createGame(prevState, formData, options = {}) {
     if (!options?.skipAdminCheck) {
       await requireAdmin();
     }
-    // Grab ID to update
-    const id = formData.get("gameId");
-    const title = formData.get("title");
-    const slug = formData.get("slug");
-    const description = formData.get("description");
-    const categoryId = formData.get("category");
+    const rawGameId = normalizeInputString(formData.get("gameId"));
+    const parsedGameId = rawGameId ? parsePositiveInt(rawGameId) : null;
+
+    if (rawGameId && !parsedGameId) {
+      return {
+        status: "error",
+        message: "Invalid game ID.",
+        color: "red",
+      };
+    }
+
+    const validation = validateGameFormInput({
+      id: parsedGameId,
+      title: formData.get("title"),
+      slug: formData.get("slug"),
+      description: formData.get("description"),
+      categoryId: formData.get("category"),
+    });
+
+    if (validation.error) {
+      return {
+        status: "error",
+        message: validation.error,
+        color: "red",
+      };
+    }
+
+    const { id, title, slug, description, categoryId: parsedCategoryId } = validation.value;
     const published = formData.get("published") === "true";
     const thumbnailFile = formData.get("thumbnailFile");
     const gameFile = formData.get("gameFile");
@@ -232,21 +331,15 @@ export async function createGame(prevState, formData, options = {}) {
       ? uploadedGameFileNameRaw.trim()
       : null;
 
-    const parsedId = id ? parseInt(id, 10) : null;
-    const parsedCategoryId = categoryId ? parseInt(categoryId, 10) : null;
+    const selectedCategory = await prisma.category.findUnique({
+      where: { id: parsedCategoryId },
+      select: { id: true },
+    });
 
-    if (id && !Number.isFinite(parsedId)) {
+    if (!selectedCategory) {
       return {
         status: "error",
-        message: "Invalid game ID.",
-        color: "red",
-      };
-    }
-
-    if (!Number.isFinite(parsedCategoryId)) {
-      return {
-        status: "error",
-        message: "Category is required.",
+        message: "Selected category does not exist.",
         color: "red",
       };
     }
@@ -268,14 +361,14 @@ export async function createGame(prevState, formData, options = {}) {
 
     if (id) {
       existingGameRecord = await prisma.game.findUnique({
-        where: { id: parsedId },
+        where: { id },
         select: { slug: true, image: true, game_url: true },
       });
 
       const existingGame = await prisma.game.findFirst({
         where: {
           slug: slug,
-          NOT: { id: parsedId },
+          NOT: { id },
         },
         select: { id: true },
       });
@@ -296,7 +389,7 @@ export async function createGame(prevState, formData, options = {}) {
       categories: id
         ? { set: [{ id: parsedCategoryId }] }
         : { connect: { id: parsedCategoryId } },
-      published
+      published,
     };
 
 
@@ -329,8 +422,8 @@ export async function createGame(prevState, formData, options = {}) {
 
         // update the game
         await prisma.game.update({
-          where: { id: parsedId },
-          data: gameData
+          where: { id },
+          data: gameData,
         });
 
         // Only after the DB write succeeds, delete replaced assets.
@@ -351,7 +444,7 @@ export async function createGame(prevState, formData, options = {}) {
       }
 
       revalidateGamePages({
-        id: parsedId,
+        id,
         slug,
         oldSlug: existingGameRecord?.slug,
       });

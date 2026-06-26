@@ -9,7 +9,7 @@ import Pagination from "@/components/ui/Pagination";
 import GameCard from "@/components/ui/GameCard";
 import { notFound } from "next/navigation";
 import Script from "next/script";
-import { buildBreadcrumbJsonLd, safeJsonLdStringify } from "@/features/game/seo";
+import { buildBreadcrumbJsonLd, buildMetaDescription, safeJsonLdStringify } from "@/features/game/seo";
 
 const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
 
@@ -21,8 +21,16 @@ export async function generateMetadata({ params, searchParams }) {
   const titleBase = category?.title || params.slug;
   const title = page > 1 ? `${titleBase} (Page ${page})` : titleBase;
   const description = category?.core
-    ? `Browse ${titleBase} retro games on Retro Hextech. Core: ${category.core}.`
-    : `Browse ${titleBase} retro games on Retro Hextech.`;
+    ? buildMetaDescription(
+        `Browse ${titleBase} retro games on Retro Hextech.`,
+        [
+          `Compare platform collections and launch browser-playable classics from the ${category.core} core.`,
+        ]
+      )
+    : buildMetaDescription(
+        `Browse ${titleBase} retro games on Retro Hextech.`,
+        ["Compare platform collections and launch browser-playable classics from the matching category."]
+      );
 
   const canonical =
     page > 1

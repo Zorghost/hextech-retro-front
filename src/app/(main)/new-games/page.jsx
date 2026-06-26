@@ -6,6 +6,7 @@ import { getLatestPublishedGames } from "@/features/game/queries";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 import { getSiteUrl } from "@/lib/siteUrl";
 import Link from "next/link";
+import { buildMetaDescription } from "@/features/game/seo";
 
 const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
 
@@ -15,7 +16,10 @@ export async function generateMetadata() {
 
   return {
     title: "New games",
-    description: "The latest retro games added to the library.",
+    description: buildMetaDescription(
+      "Explore the newest retro games added to Retro Hextech.",
+      ["Browse fresh browser-playable titles across SNES, N64, Sega, Atari, and handheld collections."]
+    ),
     alternates: {
       canonical,
     },
@@ -23,7 +27,10 @@ export async function generateMetadata() {
       type: "website",
       url: canonical,
       title: "New games",
-      description: "The latest retro games added to the library.",
+      description: buildMetaDescription(
+        "Explore the newest retro games added to Retro Hextech.",
+        ["Browse fresh browser-playable titles across SNES, N64, Sega, Atari, and handheld collections."]
+      ),
     },
   };
 }

@@ -5,6 +5,7 @@ import { getPublicAssetUrl } from "@/lib/assetUrls";
 import Script from "next/script";
 import { Suspense } from "react";
 import { GoogleAnalyticsRouteTracker } from "@/components/analytics/google-analytics";
+import { buildMetaDescription } from "@/features/game/seo";
 
 const InterBodyFont = Inter({
   subsets: ["latin"],
@@ -23,8 +24,10 @@ export const metadata = {
     default: "Retro Hextech — Classic Games Online (SNES, N64, Sega, Atari)",
     template: "%s | Retro Hextech",
   },
-  description:
-    "Play classic retro games online for free — browse our Atari, SNES, Sega and Nintendo collections.",
+  description: buildMetaDescription(
+    "Play classic retro games online in your browser with SNES, N64, Sega, Atari, and handheld favorites.",
+    ["Browse collections, search titles, and launch instantly."]
+  ),
   alternates: {
     canonical: "/",
   },
@@ -37,8 +40,10 @@ export const metadata = {
     siteName: "Retro Hextech",
     url: "/",
     title: "Retro Hextech — Classic Games Online (SNES, N64, Sega, Atari)",
-    description:
-      "Play classic retro games online for free — browse our Atari, SNES, Sega and Nintendo collections.",
+    description: buildMetaDescription(
+      "Play classic retro games online in your browser with SNES, N64, Sega, Atari, and handheld favorites.",
+      ["Browse collections, search titles, and launch instantly."]
+    ),
     locale: "en_US",
     images: [
       {
@@ -50,8 +55,10 @@ export const metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Retro Hextech — Classic Games Online (SNES, N64, Sega, Atari)",
-    description:
-      "Play classic retro games online for free — browse our Atari, SNES, Sega and Nintendo collections.",
+    description: buildMetaDescription(
+      "Play classic retro games online in your browser with SNES, N64, Sega, Atari, and handheld favorites.",
+      ["Browse collections, search titles, and launch instantly."]
+    ),
     images: [
       {
         url: getPublicAssetUrl("/slide/slide-1.png"),
