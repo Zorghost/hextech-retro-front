@@ -20,16 +20,20 @@ export async function generateMetadata({ params, searchParams }) {
 
   const titleBase = category?.title || params.slug;
   const title = page > 1 ? `${titleBase} (Page ${page})` : titleBase;
+  const countSuffix = category?.title
+    ? `Browse browser-playable games from the ${category.title} collection.`
+    : "Browse browser-playable games from this retro collection.";
   const description = category?.core
     ? buildMetaDescription(
         `Browse ${titleBase} retro games on Retro Hextech.`,
         [
           `Compare platform collections and launch browser-playable classics from the ${category.core} core.`,
+          countSuffix,
         ]
       )
     : buildMetaDescription(
         `Browse ${titleBase} retro games on Retro Hextech.`,
-        ["Compare platform collections and launch browser-playable classics from the matching category."]
+        ["Compare platform collections and launch browser-playable classics from the matching category.", countSuffix]
       );
 
   const canonical =
@@ -65,8 +69,11 @@ export default async function Page({ params, searchParams }) {
     notFound();
   }
 
-  const { games, totalPages, currentPage } = await getGamesByCategory(params.slug, page);
-  const categorySubtitle = category.core ? `Core: ${category.core}` : `Browse ${category.title} retro games.`;
+  const { games, totalPages, totalCount, currentPage } = await getGamesByCategory(params.slug, page);
+  const categorySubtitle = category.core
+    ? `Core: ${category.core}. ${totalCount} games in this collection.`
+    : `${totalCount} games in this collection. Browse ${category.title} retro games and jump into browser-playable classics.`;
+  const collectionHighlights = games.slice(0, 3).map((game) => game.title).filter(Boolean);
   const siteUrl = getSiteUrl();
   const breadcrumbLd = buildBreadcrumbJsonLd([
     { name: "Home", href: "/" },
@@ -84,6 +91,11 @@ export default async function Page({ params, searchParams }) {
       <div>
         <h1 className="font-display text-3xl md:text-4xl">{category.title}</h1>
         <p className="mt-2 max-w-2xl text-sm text-slate-300 md:text-base">{categorySubtitle}</p>
+        {collectionHighlights.length ? (
+          <p className="mt-3 max-w-3xl text-sm text-slate-400 md:text-base">
+            Featured titles here include {collectionHighlights.join(", ")}. Use this page to compare the collection, spot familiar names, and start playing quickly.
+          </p>
+        ) : null}
       </div>
 
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Categories", href: "/category" }, { label: category.title }]} />

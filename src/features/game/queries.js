@@ -217,7 +217,7 @@ export async function getGamesByCategory(categorySlug, page = 1) {
   ]);
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
-  return { games, totalPages, currentPage: page };
+  return { games, totalPages, totalCount, currentPage: page };
 }
 
 export async function getGameBySlug(slug) {
