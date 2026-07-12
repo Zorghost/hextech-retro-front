@@ -107,18 +107,29 @@ async function main() {
   const games = [];
 
   for (const category of categories) {
-    await prisma.category.upsert({
+    const existingCategory = await prisma.category.findFirst({
       where: {
-        id: category.id,
-      },
-      update: {
-        title: category.title,
-        image: category.image,
-        core: category.core,
         slug: category.slug,
       },
-      create: {
-        id: category.id,
+    });
+
+    if (existingCategory) {
+      await prisma.category.update({
+        where: {
+          id: existingCategory.id,
+        },
+        data: {
+          title: category.title,
+          image: category.image,
+          core: category.core,
+          slug: category.slug,
+        },
+      });
+      continue;
+    }
+
+    await prisma.category.create({
+      data: {
         title: category.title,
         image: category.image,
         core: category.core,
