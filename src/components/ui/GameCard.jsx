@@ -1,8 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 
-const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
+const fallbackThumbnail = "/game/placeholder.jpg";
 
 export default function GameCard({
   game,
@@ -12,6 +15,9 @@ export default function GameCard({
   showCategoryTitle = true,
   className = "",
 }) {
+  const initialThumbnail = game ? getGameThumbnailUrl(game.image) : fallbackThumbnail;
+  const [thumbnailSrc, setThumbnailSrc] = useState(initialThumbnail);
+
   if (!game) {
     return null;
   }
@@ -29,13 +35,14 @@ export default function GameCard({
           : "relative mb-2 aspect-square w-full overflow-hidden rounded-xl border border-accent-secondary bg-main"}
       >
         <Image
-          src={getGameThumbnailUrl(game.image)}
+          src={thumbnailSrc}
           alt={game.title}
           fill
           sizes={compact ? "64px" : "(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 180px"}
-          unoptimized={isProxyImageSource}
+          unoptimized
           quality={50}
           className="object-cover transition-transform duration-300 group-hover:scale-105"
+          onError={() => setThumbnailSrc(fallbackThumbnail)}
         />
       </div>
 
