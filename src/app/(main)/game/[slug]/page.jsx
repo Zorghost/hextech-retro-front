@@ -17,6 +17,8 @@ import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 
+export const revalidate = 3600; // 1 hour
+
 const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
 
 const CORE_LABELS = {

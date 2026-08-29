@@ -1,7 +1,7 @@
 import { getGameCategories, getPublishedGamesForSitemap } from "@/features/game/queries";
 import { getRequestSiteUrl } from "@/lib/requestSiteUrl";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400; // 24 hours
 
 export default async function sitemap() {
   const siteUrl = getRequestSiteUrl();

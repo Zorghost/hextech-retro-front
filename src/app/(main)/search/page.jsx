@@ -7,6 +7,8 @@ import Script from "next/script";
 import { buildBreadcrumbJsonLd, buildMetaDescription, safeJsonLdStringify } from "@/features/game/seo";
 import GameCard from "@/components/ui/GameCard";
 
+export const revalidate = 3600; // 1 hour
+
 export async function generateMetadata({ searchParams }) {
   const siteUrl = getSiteUrl();
   const rawQuery = searchParams?.q;

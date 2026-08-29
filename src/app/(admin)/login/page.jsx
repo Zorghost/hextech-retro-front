@@ -95,6 +95,12 @@ export default async function Page({ searchParams }) {
                 focus:ring-primary-600 focus:border-primary-500 block w-full p-2.5"
                 placeholder="••••••••"
                 />
+            </div>
+
+            <div className="flex justify-end">
+              <Link href="/auth/forgot-password" className="text-sm text-primary hover:underline">
+                Forgot password?
+              </Link>
             </div>   
 
               <button

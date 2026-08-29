@@ -13,6 +13,8 @@ import {
   getRandomPublishedGames,
 } from "@/features/game/queries";
 
+export const revalidate = 3600; // 1 hour
+
 function dedupeRail(section, excludedIds) {
   if (!section) {
     return null;

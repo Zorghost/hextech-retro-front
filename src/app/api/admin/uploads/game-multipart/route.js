@@ -9,6 +9,7 @@ import { randomUUID } from "crypto";
 import path from "path";
 import { auth } from "@/app/auth";
 import { isAdminSession } from "@/features/admin/auth";
+import { checkRateLimit, getClientIp, getRateLimitHeaders } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -123,6 +124,21 @@ export async function POST(request) {
 
   if (!isAdminSession(session)) {
     return Response.json({ status: "error", message: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limiting: 3 ROM uploads per minute per admin (critical S3 abuse prevention)
+  const clientIp = getClientIp(request);
+  const rateLimitKey = `admin:uploads:${session.user.id || clientIp}`;
+  const rateLimitResult = await checkRateLimit(rateLimitKey, 3, 60000);
+
+  if (!rateLimitResult.success) {
+    return Response.json(
+      { status: "error", message: "Too many upload requests. Please try again later." },
+      {
+        status: 429,
+        headers: getRateLimitHeaders(rateLimitResult),
+      }
+    );
   }
 
   try {
