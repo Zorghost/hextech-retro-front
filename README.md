@@ -40,9 +40,10 @@ NEXT_PUBLIC_GAME_THUMBNAIL_BASE_URL=https://<space>.<region>.cdn.digitaloceanspa
 NEXT_PUBLIC_CATEGORY_IMAGE_BASE_URL=https://<space>.<region>.cdn.digitaloceanspaces.com/category
 
 # If your bucket/objects are private (you see 403 from the URLs above), you can proxy
-# images through the Next.js app using your server-side Spaces credentials.
-# This avoids Next Image Optimization failing with "upstream response is invalid".
+# images and ROMs through the Next.js app using your server-side Spaces credentials.
+# This avoids 403s from private buckets and keeps the browser from hitting storage directly.
 NEXT_PUBLIC_IMAGE_SOURCE=proxy
+NEXT_PUBLIC_ROM_SOURCE=proxy
 
 # Google Analytics (GA4)
 # Optional override; defaults to the built-in measurement ID if unset.

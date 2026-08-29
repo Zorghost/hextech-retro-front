@@ -45,7 +45,7 @@ export const runtime = "nodejs";
 
 // This is intentionally NOT a general purpose proxy.
 // Only allow known public asset prefixes to prevent open-proxy abuse.
-const ALLOWED_TOP_LEVEL_PREFIXES = new Set(["category", "thumbnail"]);
+const ALLOWED_TOP_LEVEL_PREFIXES = new Set(["category", "thumbnail", "rom"]);
 
 export async function GET(_request, { params }) {
   try {

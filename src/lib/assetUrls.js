@@ -28,6 +28,9 @@ export function getPublicAssetUrl(path) {
 }
 
 export function getRomUrl(filename) {
+  const romSource = (process.env.NEXT_PUBLIC_ROM_SOURCE ?? "").toLowerCase();
+  if (romSource === "proxy") return `/api/assets/rom/${encodeURIComponent(filename)}`;
+
   const base = process.env.NEXT_PUBLIC_ROM_BASE_URL;
   if (base) return withAssetVersion(joinUrl(base, encodeURIComponent(filename)));
   return withAssetVersion(`/${encodeURIComponent(filename)}`);
@@ -35,6 +38,9 @@ export function getRomUrl(filename) {
 
 // Same as getRomUrl, but allows passing a base URL at runtime (e.g. from a Server Component).
 export function getRomUrlWithBase(filename, base) {
+  const romSource = (process.env.NEXT_PUBLIC_ROM_SOURCE ?? "").toLowerCase();
+  if (romSource === "proxy") return `/api/assets/rom/${encodeURIComponent(filename)}`;
+
   if (base) return withAssetVersion(joinUrl(base, encodeURIComponent(filename)));
   return withAssetVersion(`/${encodeURIComponent(filename)}`);
 }
