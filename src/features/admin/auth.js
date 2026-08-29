@@ -17,6 +17,13 @@ function getAdminAllowlist() {
     .filter(Boolean);
 }
 
+export function isAdminEmail(email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return false;
+
+  return getAdminAllowlist().includes(normalizedEmail);
+}
+
 export function isAdminSession(session) {
   const email = normalizeEmail(session?.user?.email);
   const role = session?.user?.role;

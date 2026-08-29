@@ -2,6 +2,11 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma";
 import { compare } from "bcryptjs";
+import { isAdminEmail } from "@/features/admin/auth";
+
+function normalizeEmail(value) {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
  
 export const { handlers, signIn, signOut, auth } = NextAuth({
   // Self-hosted deployments (Docker / reverse proxies) must explicitly trust the host.
@@ -15,11 +20,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: {},
       },
       authorize: async (credentials) => {
-        const email = credentials.email;
-        const password = credentials.password;
+        const email = normalizeEmail(credentials?.email);
+        const password = typeof credentials?.password === "string" ? credentials.password : "";
 
         if (!email || !password) {
-          throw new Error("Please provide email and password.")
+          return null;
         }
 
         const user = await prisma.user.findUnique({
@@ -28,25 +33,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
         });
 
-        // if (user && user.role === 'admin') {
-        //   // User is an admin
-        //   console.log('User is an admin');
-        // } else {
-        //   // User is not an admin
-        //   console.log('User is not an admin');
-        // }
-
-        if (!user) {
-          throw new Error("Invalid user.")
+        if (!user || (!isAdminEmail(email) && user.role !== "admin")) {
+          return null;
         }
 
-        const isPasswordValid = await compare(
-          password,
-          user.password
-        );
+        const isPasswordValid = await compare(password, user.password);
 
         if(!isPasswordValid) {
-          throw new Error("Invalid Password.")
+          return null;
         }
 
         return {
