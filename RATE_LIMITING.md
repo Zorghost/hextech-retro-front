@@ -3,7 +3,7 @@
 This document explains the rate limiting system implemented to protect your API endpoints from abuse.
 
 ## Overview
-
+wegesag
 Rate limiting protects your application from:
 - **Brute force attacks** - Password reset spam, login attempts
 - **Denial of Service (DoS)** - Search hammering, upload abuse  
