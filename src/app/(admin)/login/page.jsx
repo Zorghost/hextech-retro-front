@@ -4,6 +4,23 @@ import { auth } from "@/app/auth";
 import Link from "next/link";
 import Image from "next/image";
 
+function getLoginErrorMessage(error) {
+  const message = typeof error?.message === "string" ? error.message : "";
+  const type = typeof error?.type === "string" ? error.type : "";
+  const normalizedMessage = message.toLowerCase();
+
+  if (
+    type === "CredentialsSignin" ||
+    type === "CallbackRouteError" ||
+    normalizedMessage.includes("credentialssignin") ||
+    normalizedMessage.includes("callbackrouteerror")
+  ) {
+    return "Invalid admin email or password.";
+  }
+
+  return message || "Login failed";
+}
+
 export default async function Page({ searchParams }) {
   const session = await auth();
   const errorMessage =
@@ -53,10 +70,10 @@ export default async function Page({ searchParams }) {
                   });
 
                   if (result?.error) {
-                    redirect(`/login?error=${encodeURIComponent(result.error)}`);
+                    redirect(`/login?error=${encodeURIComponent(getLoginErrorMessage(result))}`);
                   }
                 } catch (error) {
-                  redirect(`/login?error=${encodeURIComponent(error.message || "Login failed")}`);
+                  redirect(`/login?error=${encodeURIComponent(getLoginErrorMessage(error))}`);
                 }
 
                 redirect("/dashboard");
