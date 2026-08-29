@@ -27,6 +27,9 @@ steps:
       - '--platform'
       - 'managed'
 
+options:
+  logging: CLOUD_LOGGING_ONLY
+
 substitutions:
   _REGION: 'europe-west1'
   _REPOSITORY: 'cloud-run-source-deploy'
