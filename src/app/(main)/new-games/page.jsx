@@ -8,6 +8,7 @@ import { getSiteUrl } from "@/lib/siteUrl";
 import Link from "next/link";
 import { buildMetaDescription } from "@/features/game/seo";
 
+export const dynamic = "force-dynamic";
 export const revalidate = 3600; // 1 hour
 
 const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
