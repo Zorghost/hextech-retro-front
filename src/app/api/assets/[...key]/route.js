@@ -93,8 +93,9 @@ export async function GET(_request, { params }) {
     const headers = new Headers();
     if (result.ContentType) headers.set("Content-Type", result.ContentType);
 
-    // Long cache since these are versioned by filename in DB (or you can bust by renaming).
-    headers.set("Cache-Control", "public, max-age=31536000, immutable");
+    // Cache successful responses for a while, but avoid treating them as immutable if the
+    // underlying object may change or the same key is re-used during replacement operations.
+    headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=86400");
 
     return new Response(result.Body, { status: 200, headers });
   } catch (error) {
@@ -107,9 +108,15 @@ export async function GET(_request, { params }) {
     // - Any other upstream error => 502
     const message = (error?.name || "").toString();
     if (message === "NoSuchKey") {
-      return new Response("Not found", { status: 404 });
+      return new Response("Not found", {
+        status: 404,
+        headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+      });
     }
 
-    return new Response("Upstream error", { status: 502 });
+    return new Response("Upstream error", {
+      status: 502,
+      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+    });
   }
 }

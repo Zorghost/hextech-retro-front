@@ -17,12 +17,24 @@ export default function GameCard({
 }) {
   const initialThumbnail = game ? getGameThumbnailUrl(game.image) : fallbackThumbnail;
   const [thumbnailSrc, setThumbnailSrc] = useState(initialThumbnail);
+  const [thumbnailRetry, setThumbnailRetry] = useState(0);
 
   if (!game) {
     return null;
   }
 
   const gameHref = href ?? `/game/${game.slug}`;
+
+  const handleThumbnailError = () => {
+    if (thumbnailRetry < 2) {
+      const nextRetry = thumbnailRetry + 1;
+      setThumbnailRetry(nextRetry);
+      setThumbnailSrc(`${getGameThumbnailUrl(game.image)}?retry=${nextRetry}&ts=${Date.now()}`);
+      return;
+    }
+
+    setThumbnailSrc(fallbackThumbnail);
+  };
 
   return (
     <Link
@@ -42,7 +54,7 @@ export default function GameCard({
           unoptimized
           quality={50}
           className="object-cover transition-transform duration-300 group-hover:scale-105"
-          onError={() => setThumbnailSrc(fallbackThumbnail)}
+          onError={handleThumbnailError}
         />
       </div>
 
