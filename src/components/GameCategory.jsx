@@ -27,7 +27,7 @@ export default function GameCategory({category}) {
       ) : (
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
         {games.map((game) => (
-          <GameCard key={game.id} game={game} showDescription={false} />
+          <GameCard key={game.id} game={game} showDescription={false} className="h-full" />
         ))}
       </div>
       )}

@@ -24,6 +24,22 @@ function detectLegacyBrowser() {
   return /MSIE|Trident|SamsungBrowser/i.test(ua) || !window?.matchMedia?.("(prefers-reduced-motion: no-preference)");
 }
 
+function hasEmulatorInitializedContent(container) {
+  if (!container) {
+    return false;
+  }
+
+  if (container.querySelector("canvas, iframe, video, .ejs_screen")) {
+    return true;
+  }
+
+  if (container.querySelector(".ejs_start_button, .ejs_ui, .ejs_game")) {
+    return true;
+  }
+
+  return container.childElementCount > 0 || (container.textContent ?? "").trim().length > 0;
+}
+
 export default function GameEmulator({ game, romUrl }) {
   const core = game?.categories?.[0]?.core;
   const [status, setStatus] = useState("idle");
@@ -78,7 +94,7 @@ export default function GameEmulator({ game, romUrl }) {
 
       const pollUntilReady = () => {
         const container = document.getElementById("game");
-        const hasEmulatorContent = !!container?.querySelector("canvas, iframe, video, .ejs_screen");
+        const hasEmulatorContent = hasEmulatorInitializedContent(container);
 
         if (hasEmulatorContent) {
           setStatus("ready");
