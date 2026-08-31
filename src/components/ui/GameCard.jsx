@@ -28,8 +28,11 @@ export default function GameCard({
   const handleThumbnailError = () => {
     if (thumbnailRetry < 2) {
       const nextRetry = thumbnailRetry + 1;
+      const retryUrl = new URL(getGameThumbnailUrl(game.image), window.location.origin);
+      retryUrl.searchParams.set("retry", String(nextRetry));
+      retryUrl.searchParams.set("ts", String(Date.now()));
       setThumbnailRetry(nextRetry);
-      setThumbnailSrc(`${getGameThumbnailUrl(game.image)}?retry=${nextRetry}&ts=${Date.now()}`);
+      setThumbnailSrc(retryUrl.toString());
       return;
     }
 

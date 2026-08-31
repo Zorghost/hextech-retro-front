@@ -1,5 +1,7 @@
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
+let s3Client;
+
 function getEnv(name, fallbackName) {
   return process.env[name] ?? (fallbackName ? process.env[fallbackName] : undefined);
 }
@@ -41,6 +43,25 @@ function getS3ConfigOrThrow() {
   };
 }
 
+function getS3Client() {
+  if (!s3Client) {
+    const { region, endpoint, forcePathStyle, accessKeyId, secretAccessKey } = getS3ConfigOrThrow();
+
+    s3Client = new S3Client({
+      region,
+      endpoint,
+      forcePathStyle,
+      maxAttempts: 3,
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+      },
+    });
+  }
+
+  return s3Client;
+}
+
 export const runtime = "nodejs";
 
 // This is intentionally NOT a general purpose proxy.
@@ -66,20 +87,9 @@ export async function GET(_request, { params }) {
 
     const objectKey = keyParts.join("/");
 
-    const { region, bucket, endpoint, forcePathStyle, accessKeyId, secretAccessKey } =
-      getS3ConfigOrThrow();
+    const { bucket } = getS3ConfigOrThrow();
 
-    const s3Client = new S3Client({
-      region,
-      endpoint,
-      forcePathStyle,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
-    });
-
-    const result = await s3Client.send(
+    const result = await getS3Client().send(
       new GetObjectCommand({
         Bucket: bucket,
         Key: objectKey,

@@ -69,6 +69,10 @@ export default function CategorySlider({ categories }) {
                   alt={item.title}
                   sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, 16vw"
                   unoptimized={isProxyImageSource}
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = "/category/placeholder.jpg";
+                  }}
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                 />
               </div>
