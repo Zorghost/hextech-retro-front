@@ -1,6 +1,6 @@
 "use server";
 import { prisma } from "@/lib/prisma";
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { deleteGcsObject, uploadGcsObject } from "@/lib/gcsStorage";
 import { randomUUID } from "crypto";
 import path from "path";
 import { redirect } from "next/navigation";
@@ -166,7 +166,7 @@ function generateUniqueFilename(originalName, allowedExtensions) {
   return `${randomUUID()}${ext}`;
 }
 
-async function deleteS3ObjectIfSafe(prefix, filename, allowedExtensions) {
+async function deleteGcsObjectIfSafe(prefix, filename, allowedExtensions) {
   if (!isNonEmptyString(prefix) || !isNonEmptyString(filename)) return;
 
   try {
@@ -183,17 +183,11 @@ async function deleteS3ObjectIfSafe(prefix, filename, allowedExtensions) {
 
   const objectKey = `${prefix}/${filename}`;
   try {
-    assertS3Configured();
-    await s3Client.send(
-      new DeleteObjectCommand({
-        Bucket: s3Bucket,
-        Key: objectKey,
-      }),
-    );
+    await deleteGcsObject(objectKey);
     console.log("Deleted old object", { key: objectKey });
   } catch (error) {
     // Best-effort cleanup.
-    console.error("Failed to delete old object", { key: objectKey, message: error?.message });
+    console.error("Failed to delete old GCS object", { key: objectKey, message: error?.message });
   }
 }
 
@@ -223,46 +217,6 @@ function isNextRedirectError(error) {
       error.digest.startsWith("NEXT_REDIRECT"),
   );
 }
-
-function getHostnameFromUrl(value) {
-  if (!isNonEmptyString(value)) return null;
-
-  try {
-    return new URL(value).hostname.toLowerCase();
-  } catch {
-    return null;
-  }
-}
-
-function getConfiguredSiteHosts() {
-  return [
-    process.env.NEXT_PUBLIC_SITE_URL,
-    process.env.NEXT_SITE_URL,
-    process.env.SITE_URL,
-    process.env.NEXTAUTH_URL,
-    process.env.NEXT_WEBSITE_URL,
-    process.env.NEXT_PUBLIC_WEBSITE_URL,
-    process.env.DIGITALOCEAN_APP_URL,
-  ]
-    .map((value) => getHostnameFromUrl(value))
-    .filter(Boolean);
-}
-
-function getStorageEndpointHint() {
-  const endpointHost = getHostnameFromUrl(s3Endpoint);
-  const siteHosts = getConfiguredSiteHosts();
-
-  if (!endpointHost) {
-    return "Check NEXT_S3_ENDPOINT and make sure it points to your S3 API endpoint.";
-  }
-
-  if (siteHosts.includes(endpointHost)) {
-    return `NEXT_S3_ENDPOINT is pointing to your site host (${endpointHost}). It must point to your object storage API endpoint instead.`;
-  }
-
-  return `Check NEXT_S3_ENDPOINT (${endpointHost}) and make sure Cloudflare is not blocking PUT requests to that storage endpoint.`;
-}
-
 function isCloudflareBlockPage(value) {
   if (!isNonEmptyString(value)) return false;
 
@@ -276,7 +230,7 @@ function isCloudflareBlockPage(value) {
 
 function getErrorMessage(error) {
   if (isCloudflareBlockPage(error?.message)) {
-    return `Upload request was blocked by Cloudflare. ${getStorageEndpointHint()}`;
+    return "Upload request was blocked by Cloudflare. Check the Google Cloud Storage configuration and bucket permissions.";
   }
 
   if (typeof error?.message === "string" && error.message.trim().length > 0) {
@@ -429,17 +383,17 @@ export async function createGame(prevState, formData, options = {}) {
         // Only after the DB write succeeds, delete replaced assets.
         if (isNonEmptyString(previousThumbnail) && isNonEmptyString(gameData.image)) {
           if (previousThumbnail !== gameData.image) {
-            await deleteS3ObjectIfSafe("thumbnail", previousThumbnail, ALLOWED_THUMBNAIL_EXTENSIONS);
+            await deleteGcsObjectIfSafe("thumbnail", previousThumbnail, ALLOWED_THUMBNAIL_EXTENSIONS);
           }
         }
 
         if (isNonEmptyString(previousRom) && isNonEmptyString(gameData.game_url)) {
           if (previousRom !== gameData.game_url) {
-            await deleteS3ObjectIfSafe("rom", previousRom, ALLOWED_ROM_EXTENSIONS);
+            await deleteGcsObjectIfSafe("rom", previousRom, ALLOWED_ROM_EXTENSIONS);
           }
         }
       } catch (error) {
-        await cleanupUploadedS3Objects(uploadedObjectKeys);
+        await cleanupUploadedGcsObjects(uploadedObjectKeys);
         throw error;
       }
 
@@ -516,7 +470,7 @@ export async function createGame(prevState, formData, options = {}) {
           select: { id: true, slug: true },
         });
       } catch (error) {
-        await cleanupUploadedS3Objects(uploadedObjectKeys);
+        await cleanupUploadedGcsObjects(uploadedObjectKeys);
         throw error;
       }
 
@@ -557,7 +511,7 @@ async function uploadGame(gameFile) {
   const objectKey = `rom/${filename}`;
 
   const buffer = Buffer.from(await gameFile.arrayBuffer());
-  await uploadFileToS3(buffer, objectKey, gameFile.type);
+  await uploadGcsObject(objectKey, buffer, gameFile.type);
   return { filename, objectKey };
 }
 
@@ -572,97 +526,21 @@ async function uploadThumbnail(thumbnailFile) {
   const objectKey = `thumbnail/${filename}`;
 
   const buffer = Buffer.from(await thumbnailFile.arrayBuffer());
-  await uploadFileToS3(buffer, objectKey, thumbnailFile.type);
+  await uploadGcsObject(objectKey, buffer, thumbnailFile.type);
   return { filename, objectKey };
 }
 
-const s3Region = getEnv("NEXT_S3_REGION", "NEXT_AWS_S3_REGION");
-const s3Bucket = getEnv("NEXT_S3_BUCKET_NAME", "NEXT_AWS_S3_BUCKET_NAME");
-const s3Endpoint = getEnv("NEXT_S3_ENDPOINT", "NEXT_AWS_S3_ENDPOINT");
-const s3ForcePathStyle = (
-  getEnv("NEXT_S3_FORCE_PATH_STYLE") ??
-  (s3Endpoint?.includes("storage.googleapis.com") ? "true" : "false")
-).toLowerCase() === "true";
-const s3PublicRead = (getEnv("NEXT_S3_PUBLIC_READ") ?? "false").toLowerCase() === "true";
-
-function assertS3Configured() {
-  const missing = [];
-
-  if (!isNonEmptyString(s3Bucket)) missing.push("NEXT_S3_BUCKET_NAME");
-  if (!isNonEmptyString(s3Region)) missing.push("NEXT_S3_REGION");
-  if (!isNonEmptyString(s3Endpoint)) missing.push("NEXT_S3_ENDPOINT");
-
-  const accessKeyId = getEnv("NEXT_S3_KEY_ID", "NEXT_AWS_S3_KEY_ID");
-  const secretAccessKey = getEnv("NEXT_S3_SECRET_ACCESS_KEY", "NEXT_AWS_S3_SECRET_ACCESS_KEY");
-  if (!isNonEmptyString(accessKeyId)) missing.push("NEXT_S3_KEY_ID");
-  if (!isNonEmptyString(secretAccessKey)) missing.push("NEXT_S3_SECRET_ACCESS_KEY");
-
-  if (missing.length > 0) {
-    throw new Error(`S3 upload is not configured. Missing: ${missing.join(", ")}`);
-  }
-}
-
-const s3Client = new S3Client({
-  region: s3Region,
-  endpoint: s3Endpoint,
-  forcePathStyle: s3ForcePathStyle,
-  credentials: {
-    accessKeyId: getEnv("NEXT_S3_KEY_ID", "NEXT_AWS_S3_KEY_ID"),
-    secretAccessKey: getEnv("NEXT_S3_SECRET_ACCESS_KEY", "NEXT_AWS_S3_SECRET_ACCESS_KEY"),
-  },
-})
-
-async function uploadFileToS3(file, filename, contentType) {
-  assertS3Configured();
-
-  // Safe debug info (no secrets)
-  console.log("Uploading to S3", {
-    bucket: s3Bucket,
-    endpoint: s3Endpoint,
-    region: s3Region,
-    key: filename,
-    forcePathStyle: s3ForcePathStyle,
-    publicRead: s3PublicRead,
-  });
-
-  const params = {
-    Bucket: s3Bucket,
-    Key: `${filename}`,
-    Body: file,
-    ContentType: contentType || undefined,
-    ACL: s3PublicRead ? "public-read" : undefined,
-  }
-
-  const command = new PutObjectCommand(params);
-  const response = await s3Client.send(command);
-  console.log("File uploaded successfully", { key: filename, eTag: response?.ETag });
-  return filename
-}
-
-async function cleanupUploadedS3Objects(objectKeys) {
+async function cleanupUploadedGcsObjects(objectKeys) {
   const keys = Array.isArray(objectKeys) ? objectKeys.filter(Boolean) : [];
   if (keys.length === 0) return;
 
-  try {
-    assertS3Configured();
-  } catch {
-    // If S3 isn't configured, there's nothing we can do.
-    return;
-  }
-
   await Promise.all(
-    keys.map(async (Key) => {
+    keys.map(async (key) => {
       try {
-        await s3Client.send(
-          new DeleteObjectCommand({
-            Bucket: s3Bucket,
-            Key,
-          }),
-        );
-        console.log("Cleaned up uploaded object", { key: Key });
+        await deleteGcsObject(key);
+        console.log("Cleaned up uploaded GCS object", { key });
       } catch (error) {
-        // Best-effort cleanup; don't mask the original DB error.
-        console.error("Failed to cleanup uploaded object", { key: Key, message: error?.message });
+        console.error("Failed to cleanup uploaded GCS object", { key, message: error?.message });
       }
     }),
   );

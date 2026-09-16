@@ -1,5 +1,5 @@
 Simple Retro Gaming Platform - NextRivals
-The website can be used locally or you could move all of your assets into an S3 bucket.
+The website can be used locally or you can store all assets in a Google Cloud Storage bucket.
 
 **Note that game ROMS are not included.*
 
@@ -21,26 +21,22 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_WEBSITE_URL=http://localhost:3000
 AUTH_SECRET=YourSecretPhrase
 
-# S3-compatible object storage (works with AWS S3 and DigitalOcean Spaces)
-# DigitalOcean Spaces example endpoint: https://nyc3.digitaloceanspaces.com
-NEXT_S3_BUCKET_NAME=your-space-name
-NEXT_S3_REGION=nyc3
-NEXT_S3_ENDPOINT=https://nyc3.digitaloceanspaces.com
-NEXT_S3_KEY_ID=your-spaces-access-key
-NEXT_S3_SECRET_ACCESS_KEY=your-spaces-secret
-
-# Optional: set true if your bucket uses ACLs for public objects
-NEXT_S3_PUBLIC_READ=false
+# Google Cloud Storage
+GCS_BUCKET_NAME=your-gcs-bucket
+# Use one of these credential options:
+# GCP_PROJECT_ID=your-google-cloud-project
+# GCS_KEY_FILE=/absolute/path/to/service-account.json
+# Or set GCS_SERVICE_ACCOUNT_JSON to the service-account JSON in deployment secrets.
 
 # Public asset base URLs (recommended for production)
-# Example with Spaces CDN:
-# https://<space-name>.<region>.cdn.digitaloceanspaces.com
-NEXT_PUBLIC_ROM_BASE_URL=https://<space>.<region>.cdn.digitaloceanspaces.com/rom
-NEXT_PUBLIC_GAME_THUMBNAIL_BASE_URL=https://<space>.<region>.cdn.digitaloceanspaces.com/thumbnail
-NEXT_PUBLIC_CATEGORY_IMAGE_BASE_URL=https://<space>.<region>.cdn.digitaloceanspaces.com/category
+# Google Cloud Storage public URL example:
+# https://storage.googleapis.com/<bucket-name>/rom
+NEXT_PUBLIC_ROM_BASE_URL=https://storage.googleapis.com/<bucket-name>/rom
+NEXT_PUBLIC_GAME_THUMBNAIL_BASE_URL=https://storage.googleapis.com/<bucket-name>/thumbnail
+NEXT_PUBLIC_CATEGORY_IMAGE_BASE_URL=https://storage.googleapis.com/<bucket-name>/category
 
 # If your bucket/objects are private (you see 403 from the URLs above), you can proxy
-# images and ROMs through the Next.js app using your server-side Spaces credentials.
+# images and ROMs through the Next.js app using server-side Google credentials.
 # This avoids 403s from private buckets and keeps the browser from hitting storage directly.
 NEXT_PUBLIC_IMAGE_SOURCE=proxy
 NEXT_PUBLIC_ROM_SOURCE=proxy
@@ -52,8 +48,8 @@ NEXT_PUBLIC_GA_MEASUREMENT_ID=G-YQXYSJGK8L
 
 Notes:
 
-- Existing AWS env var names are still supported for backwards compatibility: `NEXT_AWS_S3_BUCKET_NAME`, `NEXT_AWS_S3_REGION`, `NEXT_AWS_S3_KEY_ID`, `NEXT_AWS_S3_SECRET_ACCESS_KEY` (and optional `NEXT_AWS_S3_ENDPOINT`).
-- For local dev without object storage, you can omit the `NEXT_PUBLIC_*_BASE_URL` vars and the app will use files from `public/`.
+- Google Cloud deployments can use Application Default Credentials instead of setting `GCS_KEY_FILE` or `GCS_SERVICE_ACCOUNT_JSON`.
+- For local dev without object storage, omit the `NEXT_PUBLIC_*_BASE_URL` vars and the app will use files from `public/`.
 
 ```bash
 npm install
@@ -111,7 +107,7 @@ This repo includes a production-ready `Dockerfile`.
 In App Platform:
 
 - Choose **Deploy from repository** → **Dockerfile**.
-- Configure runtime env vars in App Platform (Database URL, NextAuth secret, and Spaces creds/URLs).
+- Configure runtime env vars in App Platform (Database URL, NextAuth secret, and the GCS bucket/credential settings).
 
 Database note:
 
@@ -120,21 +116,10 @@ Database note:
 - To load demo data automatically on startup (usually only for staging), set `RUN_PRISMA_SEED=true`.
 
 
-## 3S Bucket Policy
+## Google Cloud Storage Permissions
 
-```
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": "*",
-            "Action": "s3:GetObject",
-            "Resource": "arn:aws:s3:::game-website123/*"
-        }
-    ]
-}
-```
+Grant the runtime service account `Storage Object Admin` on the bucket. This is required
+for private-bucket proxy reads, uploads, resumable ROM uploads, and cleanup of replaced files.
 
 ## Find Bug Fixes Here
 

@@ -1,10 +1,9 @@
 import {
-  AbortMultipartUploadCommand,
-  CompleteMultipartUploadCommand,
-  CreateMultipartUploadCommand,
-  S3Client,
-  UploadPartCommand,
-} from "@aws-sdk/client-s3";
+  abortGcsResumableUpload,
+  createGcsResumableUpload,
+  getGcsBucket,
+  uploadGcsChunk,
+} from "@/lib/gcsStorage";
 import { randomUUID } from "crypto";
 import path from "path";
 import { auth } from "@/app/auth";
@@ -44,10 +43,6 @@ function isNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function getEnv(name, fallbackName) {
-  return process.env[name] ?? (fallbackName ? process.env[fallbackName] : undefined);
-}
-
 function getLowerExtension(filename) {
   return path.extname(String(filename || "")).toLowerCase();
 }
@@ -76,42 +71,6 @@ function validateRomFilename(filename) {
 
   return ext;
 }
-
-const s3Region = getEnv("NEXT_S3_REGION", "NEXT_AWS_S3_REGION");
-const s3Bucket = getEnv("NEXT_S3_BUCKET_NAME", "NEXT_AWS_S3_BUCKET_NAME");
-const s3Endpoint = getEnv("NEXT_S3_ENDPOINT", "NEXT_AWS_S3_ENDPOINT");
-const s3ForcePathStyle = (
-  getEnv("NEXT_S3_FORCE_PATH_STYLE") ??
-  (s3Endpoint?.includes("storage.googleapis.com") ? "true" : "false")
-).toLowerCase() === "true";
-const s3PublicRead = (getEnv("NEXT_S3_PUBLIC_READ") ?? "false").toLowerCase() === "true";
-
-function assertS3Configured() {
-  const missing = [];
-
-  if (!isNonEmptyString(s3Bucket)) missing.push("NEXT_S3_BUCKET_NAME");
-  if (!isNonEmptyString(s3Region)) missing.push("NEXT_S3_REGION");
-  if (!isNonEmptyString(s3Endpoint)) missing.push("NEXT_S3_ENDPOINT");
-
-  const accessKeyId = getEnv("NEXT_S3_KEY_ID", "NEXT_AWS_S3_KEY_ID");
-  const secretAccessKey = getEnv("NEXT_S3_SECRET_ACCESS_KEY", "NEXT_AWS_S3_SECRET_ACCESS_KEY");
-  if (!isNonEmptyString(accessKeyId)) missing.push("NEXT_S3_KEY_ID");
-  if (!isNonEmptyString(secretAccessKey)) missing.push("NEXT_S3_SECRET_ACCESS_KEY");
-
-  if (missing.length > 0) {
-    throw new Error(`S3 upload is not configured. Missing: ${missing.join(", ")}`);
-  }
-}
-
-const s3Client = new S3Client({
-  region: s3Region,
-  endpoint: s3Endpoint,
-  forcePathStyle: s3ForcePathStyle,
-  credentials: {
-    accessKeyId: getEnv("NEXT_S3_KEY_ID", "NEXT_AWS_S3_KEY_ID"),
-    secretAccessKey: getEnv("NEXT_S3_SECRET_ACCESS_KEY", "NEXT_AWS_S3_SECRET_ACCESS_KEY"),
-  },
-});
 
 function ensureRomKey(key) {
   if (!isNonEmptyString(key)) throw new Error("Invalid key.");
@@ -145,7 +104,7 @@ export async function POST(request) {
   }
 
   try {
-    assertS3Configured();
+    getGcsBucket();
 
     const contentType = request.headers.get("content-type") || "";
     const isMultipart = contentType.includes("multipart/form-data");
@@ -161,6 +120,9 @@ export async function POST(request) {
       const key = String(formData.get("key") || "");
       const uploadId = String(formData.get("uploadId") || "");
       const partNumber = Number.parseInt(String(formData.get("partNumber") || ""), 10);
+      const start = Number.parseInt(String(formData.get("start") || ""), 10);
+      const end = Number.parseInt(String(formData.get("end") || ""), 10);
+      const totalSize = Number.parseInt(String(formData.get("totalSize") || ""), 10);
       const chunk = formData.get("chunk");
 
       ensureRomKey(key);
@@ -173,25 +135,25 @@ export async function POST(request) {
         return Response.json({ status: "error", message: "Invalid part number." }, { status: 400 });
       }
 
+      if (!Number.isInteger(start) || !Number.isInteger(end) || !Number.isInteger(totalSize) || start < 0 || end < start || end >= totalSize) {
+        return Response.json({ status: "error", message: "Invalid upload range." }, { status: 400 });
+      }
+
       if (!(chunk instanceof File) || chunk.size <= 0) {
         return Response.json({ status: "error", message: "Chunk is required." }, { status: 400 });
       }
 
       const buffer = Buffer.from(await chunk.arrayBuffer());
 
-      const uploadPartResponse = await s3Client.send(
-        new UploadPartCommand({
-          Bucket: s3Bucket,
-          Key: key,
-          UploadId: uploadId,
-          PartNumber: partNumber,
-          Body: buffer,
-        }),
-      );
+      if (buffer.length !== end - start + 1) {
+        return Response.json({ status: "error", message: "Upload range does not match chunk size." }, { status: 400 });
+      }
+
+      const uploadStatus = await uploadGcsChunk(uploadId, buffer, start, end, totalSize);
 
       return Response.json({
         status: "success",
-        eTag: uploadPartResponse.ETag,
+        eTag: `gcs-${partNumber}-${uploadStatus}`,
       });
     }
 
@@ -204,59 +166,27 @@ export async function POST(request) {
       const filename = `${randomUUID()}${ext}`;
       const key = `rom/${filename}`;
 
-      const createResponse = await s3Client.send(
-        new CreateMultipartUploadCommand({
-          Bucket: s3Bucket,
-          Key: key,
-          ContentType: isNonEmptyString(body?.contentType) ? String(body.contentType) : undefined,
-          ACL: s3PublicRead ? "public-read" : undefined,
-        }),
+      const uploadId = await createGcsResumableUpload(
+        key,
+        isNonEmptyString(body?.contentType) ? String(body.contentType) : undefined,
       );
-
-      if (!isNonEmptyString(createResponse.UploadId)) {
-        throw new Error("Failed to initialize multipart upload.");
-      }
 
       return Response.json({
         status: "success",
         key,
-        uploadId: createResponse.UploadId,
+        uploadId,
       });
     }
 
     if (action === "complete") {
       const key = String(body?.key || "");
       const uploadId = String(body?.uploadId || "");
-      const parts = Array.isArray(body?.parts) ? body.parts : [];
 
       ensureRomKey(key);
 
       if (!isNonEmptyString(uploadId)) {
         return Response.json({ status: "error", message: "Upload ID is required." }, { status: 400 });
       }
-
-      const normalizedParts = parts
-        .map((item) => ({
-          ETag: typeof item?.ETag === "string" ? item.ETag : typeof item?.eTag === "string" ? item.eTag : null,
-          PartNumber: Number.parseInt(String(item?.PartNumber ?? item?.partNumber ?? ""), 10),
-        }))
-        .filter((item) => isNonEmptyString(item.ETag) && Number.isInteger(item.PartNumber) && item.PartNumber > 0)
-        .sort((a, b) => a.PartNumber - b.PartNumber);
-
-      if (normalizedParts.length === 0) {
-        return Response.json({ status: "error", message: "No uploaded parts provided." }, { status: 400 });
-      }
-
-      await s3Client.send(
-        new CompleteMultipartUploadCommand({
-          Bucket: s3Bucket,
-          Key: key,
-          UploadId: uploadId,
-          MultipartUpload: {
-            Parts: normalizedParts,
-          },
-        }),
-      );
 
       const filename = ensureRomKey(key);
       return Response.json({
@@ -276,13 +206,7 @@ export async function POST(request) {
         return Response.json({ status: "error", message: "Upload ID is required." }, { status: 400 });
       }
 
-      await s3Client.send(
-        new AbortMultipartUploadCommand({
-          Bucket: s3Bucket,
-          Key: key,
-          UploadId: uploadId,
-        }),
-      );
+      await abortGcsResumableUpload(uploadId);
 
       return Response.json({ status: "success" });
     }

@@ -68,13 +68,16 @@ function uploadFormDataWithProgress(url, formData, onProgress) {
   });
 }
 
-function uploadChunkPart({ key, uploadId, partNumber, chunk, onProgress }) {
+function uploadChunkPart({ key, uploadId, partNumber, chunk, start, end, totalSize, onProgress }) {
   return new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.set("action", "uploadPart");
     formData.set("key", key);
     formData.set("uploadId", uploadId);
     formData.set("partNumber", String(partNumber));
+    formData.set("start", String(start));
+    formData.set("end", String(end));
+    formData.set("totalSize", String(totalSize));
     formData.set("chunk", chunk, `part-${partNumber}`);
 
     const request = new XMLHttpRequest();
@@ -136,6 +139,9 @@ async function uploadLargeGameInChunks(file, setUploadProgress) {
         uploadId,
         partNumber,
         chunk,
+        start,
+        end: end - 1,
+        totalSize: file.size,
         onProgress: (loaded) => {
           const rawPercent = ((uploadedBytes + loaded) / file.size) * 95;
           setUploadProgress(Math.max(1, Math.min(95, Math.round(rawPercent))));

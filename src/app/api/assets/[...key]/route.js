@@ -1,69 +1,4 @@
-import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
-
-let s3Client;
-
-function getEnv(name, fallbackName) {
-  return process.env[name] ?? (fallbackName ? process.env[fallbackName] : undefined);
-}
-
-function isNonEmptyString(value) {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function getS3ConfigOrThrow() {
-  const region = getEnv("NEXT_S3_REGION", "NEXT_AWS_S3_REGION");
-  const bucket = getEnv("NEXT_S3_BUCKET_NAME", "NEXT_AWS_S3_BUCKET_NAME");
-  const endpoint = getEnv("NEXT_S3_ENDPOINT", "NEXT_AWS_S3_ENDPOINT");
-  const forcePathStyle = (
-    getEnv("NEXT_S3_FORCE_PATH_STYLE") ??
-    (endpoint?.includes("storage.googleapis.com") ? "true" : "false")
-  ).toLowerCase() === "true";
-
-  const accessKeyId = getEnv("NEXT_S3_KEY_ID", "NEXT_AWS_S3_KEY_ID");
-  const secretAccessKey = getEnv(
-    "NEXT_S3_SECRET_ACCESS_KEY",
-    "NEXT_AWS_S3_SECRET_ACCESS_KEY",
-  );
-
-  const missing = [];
-  if (!isNonEmptyString(bucket)) missing.push("NEXT_S3_BUCKET_NAME");
-  if (!isNonEmptyString(region)) missing.push("NEXT_S3_REGION");
-  if (!isNonEmptyString(endpoint)) missing.push("NEXT_S3_ENDPOINT");
-  if (!isNonEmptyString(accessKeyId)) missing.push("NEXT_S3_KEY_ID");
-  if (!isNonEmptyString(secretAccessKey)) missing.push("NEXT_S3_SECRET_ACCESS_KEY");
-
-  if (missing.length > 0) {
-    throw new Error(`S3 asset proxy is not configured. Missing: ${missing.join(", ")}`);
-  }
-
-  return {
-    region,
-    bucket,
-    endpoint,
-    forcePathStyle,
-    accessKeyId,
-    secretAccessKey,
-  };
-}
-
-function getS3Client() {
-  if (!s3Client) {
-    const { region, endpoint, forcePathStyle, accessKeyId, secretAccessKey } = getS3ConfigOrThrow();
-
-    s3Client = new S3Client({
-      region,
-      endpoint,
-      forcePathStyle,
-      maxAttempts: 3,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
-    });
-  }
-
-  return s3Client;
-}
+import { getGcsObject } from "@/lib/gcsStorage";
 
 export const runtime = "nodejs";
 
@@ -90,37 +25,26 @@ export async function GET(_request, { params }) {
 
     const objectKey = keyParts.join("/");
 
-    const { bucket } = getS3ConfigOrThrow();
-
-    const result = await getS3Client().send(
-      new GetObjectCommand({
-        Bucket: bucket,
-        Key: objectKey,
-      }),
-    );
-
-    if (!result?.Body) {
-      return new Response("Not found", { status: 404 });
-    }
+    const result = await getGcsObject(objectKey);
 
     const headers = new Headers();
-    if (result.ContentType) headers.set("Content-Type", result.ContentType);
+    if (result.contentType) headers.set("Content-Type", result.contentType);
 
     // Cache successful responses for a while, but avoid treating them as immutable if the
     // underlying object may change or the same key is re-used during replacement operations.
     headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=86400");
 
-    return new Response(result.Body, { status: 200, headers });
+    return new Response(result.body, { status: 200, headers });
   } catch (error) {
     // Avoid leaking credentials/config; log server-side.
-    console.error("S3 asset proxy error", { message: error?.message });
+    console.error("GCS asset proxy error", { message: error?.message });
 
     // Common cases:
-    // - NoSuchKey => 404
-    // - InvalidAccessKeyId / SignatureDoesNotMatch => 502
+    // - NotFound => 404
+    // - Invalid credentials or permissions => 502
     // - Any other upstream error => 502
     const message = (error?.name || "").toString();
-    if (message === "NoSuchKey") {
+    if (message === "NoSuchKey" || message === "NotFound" || error?.code === 404) {
       return new Response("Not found", {
         status: 404,
         headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
