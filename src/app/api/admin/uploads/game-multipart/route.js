@@ -80,7 +80,10 @@ function validateRomFilename(filename) {
 const s3Region = getEnv("NEXT_S3_REGION", "NEXT_AWS_S3_REGION");
 const s3Bucket = getEnv("NEXT_S3_BUCKET_NAME", "NEXT_AWS_S3_BUCKET_NAME");
 const s3Endpoint = getEnv("NEXT_S3_ENDPOINT", "NEXT_AWS_S3_ENDPOINT");
-const s3ForcePathStyle = (getEnv("NEXT_S3_FORCE_PATH_STYLE") ?? "false").toLowerCase() === "true";
+const s3ForcePathStyle = (
+  getEnv("NEXT_S3_FORCE_PATH_STYLE") ??
+  (s3Endpoint?.includes("storage.googleapis.com") ? "true" : "false")
+).toLowerCase() === "true";
 const s3PublicRead = (getEnv("NEXT_S3_PUBLIC_READ") ?? "false").toLowerCase() === "true";
 
 function assertS3Configured() {

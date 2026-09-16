@@ -14,7 +14,10 @@ function getS3ConfigOrThrow() {
   const region = getEnv("NEXT_S3_REGION", "NEXT_AWS_S3_REGION");
   const bucket = getEnv("NEXT_S3_BUCKET_NAME", "NEXT_AWS_S3_BUCKET_NAME");
   const endpoint = getEnv("NEXT_S3_ENDPOINT", "NEXT_AWS_S3_ENDPOINT");
-  const forcePathStyle = (getEnv("NEXT_S3_FORCE_PATH_STYLE") ?? "false").toLowerCase() === "true";
+  const forcePathStyle = (
+    getEnv("NEXT_S3_FORCE_PATH_STYLE") ??
+    (endpoint?.includes("storage.googleapis.com") ? "true" : "false")
+  ).toLowerCase() === "true";
 
   const accessKeyId = getEnv("NEXT_S3_KEY_ID", "NEXT_AWS_S3_KEY_ID");
   const secretAccessKey = getEnv(
