@@ -8,9 +8,42 @@ import "swiper/css/pagination";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { getCategoryImageUrl } from "@/lib/assetUrls";
 
 const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
+const maxCategoryImageRetries = 5;
+
+function CategoryImage({ item }) {
+  const [imageSrc, setImageSrc] = useState(getCategoryImageUrl(item.image));
+  const [retryCount, setRetryCount] = useState(0);
+
+  const handleImageError = () => {
+    if (retryCount < maxCategoryImageRetries) {
+      const nextRetry = retryCount + 1;
+      const retryUrl = new URL(getCategoryImageUrl(item.image), window.location.origin);
+      retryUrl.searchParams.set("retry", String(nextRetry));
+      retryUrl.searchParams.set("ts", String(Date.now()));
+      setRetryCount(nextRetry);
+      setImageSrc(retryUrl.toString());
+      return;
+    }
+
+    setImageSrc("/category/placeholder.jpg");
+  };
+
+  return (
+    <Image
+      src={imageSrc}
+      fill
+      alt={item.title}
+      sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, 16vw"
+      unoptimized={isProxyImageSource}
+      onError={handleImageError}
+      className="object-cover transition-transform duration-300 group-hover:scale-105"
+    />
+  );
+}
 
 export default function CategorySlider({ categories }) {
   if (!Array.isArray(categories) || categories.length === 0) return null;
@@ -63,18 +96,7 @@ export default function CategorySlider({ categories }) {
           <SwiperSlide key={item?.id ?? item?.slug} className="group">
             <Link href={`/category/${item.slug}`} className="group">
               <div className="relative mb-2 aspect-square overflow-hidden rounded-lg border border-accent-secondary bg-main">
-                <Image
-                  src={getCategoryImageUrl(item.image)}
-                  fill
-                  alt={item.title}
-                  sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, 16vw"
-                  unoptimized={isProxyImageSource}
-                  onError={(event) => {
-                    event.currentTarget.onerror = null;
-                    event.currentTarget.src = "/category/placeholder.jpg";
-                  }}
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                />
+                <CategoryImage item={item} />
               </div>
               <h3 className="font-medium leading-snug">{item.title}</h3>
             </Link>

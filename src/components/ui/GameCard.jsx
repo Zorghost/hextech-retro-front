@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 
 const fallbackThumbnail = "/game/placeholder.jpg";
+const maxThumbnailRetries = 5;
 
 export default function GameCard({
   game,
@@ -26,7 +27,7 @@ export default function GameCard({
   const gameHref = href ?? `/game/${game.slug}`;
 
   const handleThumbnailError = () => {
-    if (thumbnailRetry < 2) {
+    if (thumbnailRetry < maxThumbnailRetries) {
       const nextRetry = thumbnailRetry + 1;
       const retryUrl = new URL(getGameThumbnailUrl(game.image), window.location.origin);
       retryUrl.searchParams.set("retry", String(nextRetry));
