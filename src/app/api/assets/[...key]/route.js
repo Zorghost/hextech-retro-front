@@ -1,4 +1,4 @@
-import { getGcsObject } from "@/lib/gcsStorage";
+import { getGcsImage, getGcsObject } from "@/lib/gcsStorage";
 import { Readable } from "node:stream";
 
 export const runtime = "nodejs";
@@ -26,7 +26,9 @@ export async function GET(_request, { params }) {
 
     const objectKey = keyParts.join("/");
 
-    const result = await getGcsObject(objectKey);
+    const result = topLevel === "rom"
+      ? await getGcsObject(objectKey)
+      : await getGcsImage(objectKey);
 
     const headers = new Headers();
     if (result.contentType) headers.set("Content-Type", result.contentType);
@@ -36,7 +38,8 @@ export async function GET(_request, { params }) {
     // underlying object may change or the same key is re-used during replacement operations.
     headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=86400");
 
-    return new Response(Readable.toWeb(result.body), { status: 200, headers });
+    const body = Buffer.isBuffer(result.body) ? result.body : Readable.toWeb(result.body);
+    return new Response(body, { status: 200, headers });
   } catch (error) {
     // Avoid leaking credentials/config; log server-side.
     console.error("GCS asset proxy error", { message: error?.message });

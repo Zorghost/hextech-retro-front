@@ -65,6 +65,30 @@ export async function getGcsObject(key) {
   };
 }
 
+export async function getGcsImage(key) {
+  const file = getGcsBucket().file(key);
+  let lastError;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const [metadata, body] = await Promise.all([
+        file.getMetadata(),
+        file.download(),
+      ]);
+
+      return {
+        body: body[0],
+        contentType: metadata[0].contentType,
+        contentLength: metadata[0].size,
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError;
+}
+
 export async function createGcsResumableUpload(key, contentType) {
   const [uploadUrl] = await getGcsBucket().file(key).createResumableUpload({
     metadata: { contentType: contentType || "application/octet-stream" },
