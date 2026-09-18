@@ -1,4 +1,5 @@
 import { getGcsObject } from "@/lib/gcsStorage";
+import { Readable } from "node:stream";
 
 export const runtime = "nodejs";
 
@@ -29,12 +30,13 @@ export async function GET(_request, { params }) {
 
     const headers = new Headers();
     if (result.contentType) headers.set("Content-Type", result.contentType);
+    if (result.contentLength) headers.set("Content-Length", String(result.contentLength));
 
     // Cache successful responses for a while, but avoid treating them as immutable if the
     // underlying object may change or the same key is re-used during replacement operations.
     headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=86400");
 
-    return new Response(result.body, { status: 200, headers });
+    return new Response(Readable.toWeb(result.body), { status: 200, headers });
   } catch (error) {
     // Avoid leaking credentials/config; log server-side.
     console.error("GCS asset proxy error", { message: error?.message });

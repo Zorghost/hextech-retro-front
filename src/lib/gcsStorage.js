@@ -58,7 +58,11 @@ export async function deleteGcsObject(key) {
 export async function getGcsObject(key) {
   const file = getGcsBucket().file(key);
   const [metadata] = await file.getMetadata();
-  return { body: file.createReadStream(), contentType: metadata.contentType };
+  return {
+    body: file.createReadStream(),
+    contentType: metadata.contentType,
+    contentLength: metadata.size,
+  };
 }
 
 export async function createGcsResumableUpload(key, contentType) {
