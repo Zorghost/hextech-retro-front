@@ -16,7 +16,7 @@ export default function GameCard({
   showCategoryTitle = true,
   className = "",
 }) {
-  const initialThumbnail = game ? getGameThumbnailUrl(game.image) : fallbackThumbnail;
+  const initialThumbnail = getGameThumbnailUrl(game.image);
   const [thumbnailSrc, setThumbnailSrc] = useState(initialThumbnail);
   const [thumbnailRetry, setThumbnailRetry] = useState(0);
 
