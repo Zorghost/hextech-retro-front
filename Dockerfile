@@ -1,13 +1,13 @@
 # syntax=docker/dockerfile:1
 
-FROM node:20-bullseye-slim AS deps
+FROM node:20-bookworm-slim AS deps
 WORKDIR /app
 
 # Install deps first for better layer caching
 COPY package.json package-lock.json ./
 RUN npm ci
 
-FROM node:20-bullseye-slim AS builder
+FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
 # Prisma engines require OpenSSL at build-time (Next.js prerender runs server code).
@@ -22,7 +22,7 @@ COPY . .
 # Public DB-backed routes render dynamically at runtime, so the build no longer needs a fallback DB URL.
 RUN npm run build
 
-FROM node:20-bullseye-slim AS runner
+FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 
 # Prisma engines require OpenSSL at runtime too.
