@@ -25,7 +25,7 @@ export default function GameCategory({category}) {
       {games.length === 0 ? (
         <p className="text-sm text-accent">No games yet.</p>
       ) : (
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
         {games.map((game) => (
           <GameCard key={game.id} game={game} showDescription={false} className="h-full" />
         ))}
