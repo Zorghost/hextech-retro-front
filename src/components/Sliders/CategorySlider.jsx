@@ -12,6 +12,7 @@ import { useState } from "react";
 import { getCategoryImageUrl } from "@/lib/assetUrls";
 
 const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
+const isRemoteCategoryImageSource = Boolean(process.env.NEXT_PUBLIC_CATEGORY_IMAGE_BASE_URL);
 const maxCategoryImageRetries = 5;
 
 function CategoryImage({ item }) {
@@ -38,7 +39,7 @@ function CategoryImage({ item }) {
       fill
       alt={item.title}
       sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, 16vw"
-      unoptimized={isProxyImageSource}
+      unoptimized={isProxyImageSource || !isRemoteCategoryImageSource}
       onError={handleImageError}
       className="object-cover transition-transform duration-300 group-hover:scale-105"
     />

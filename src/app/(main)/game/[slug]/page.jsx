@@ -20,7 +20,7 @@ import Script from "next/script";
 export const dynamic = "force-dynamic";
 export const revalidate = 3600; // 1 hour
 
-const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
+const assetPathPattern = /\.(?:avif|gif|jpeg|jpg|png|webp)$/i;
 
 const CORE_LABELS = {
   arcade: "Arcade",
@@ -77,6 +77,16 @@ function buildBrokenRomHref(game, canonical, supportEmail) {
 }
 
 export async function generateMetadata({ params }) {
+  if (assetPathPattern.test(params.slug)) {
+    return {
+      title: "Not found",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+
   const game = await getGameBySlug(params.slug);
   const siteUrl = getSiteUrl();
   const defaultDescription =
@@ -136,6 +146,8 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function Page({ params }) {
+  if (assetPathPattern.test(params.slug)) notFound();
+
   const game = await getGameBySlug(params.slug);
 
   if (!game) notFound();
@@ -340,7 +352,7 @@ export default async function Page({ params }) {
                           alt={relatedGame.title}
                           fill
                           sizes="64px"
-                          unoptimized={isProxyImageSource}
+                          unoptimized
                           quality={70}
                           className="object-cover transition-transform duration-300 group-hover:scale-105"
                         />
