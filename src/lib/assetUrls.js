@@ -50,6 +50,9 @@ export function getGameThumbnailUrl(filename) {
   if (imageSource === "proxy") return `/api/assets/thumbnail/${encodeURIComponent(filename)}`;
   const base = process.env.NEXT_PUBLIC_GAME_THUMBNAIL_BASE_URL;
   if (base) return withAssetVersion(joinUrl(base, encodeURIComponent(filename)));
+  if (process.env.NODE_ENV === "production") {
+    return `/api/assets/thumbnail/${encodeURIComponent(filename)}`;
+  }
   return withAssetVersion(`/game/${encodeURIComponent(filename)}`);
 }
 
@@ -58,5 +61,8 @@ export function getCategoryImageUrl(filename) {
   if (imageSource === "proxy") return `/api/assets/category/${encodeURIComponent(filename)}`;
   const base = process.env.NEXT_PUBLIC_CATEGORY_IMAGE_BASE_URL;
   if (base) return withAssetVersion(joinUrl(base, encodeURIComponent(filename)));
+  if (process.env.NODE_ENV === "production") {
+    return `/api/assets/category/${encodeURIComponent(filename)}`;
+  }
   return withAssetVersion(`/category/${encodeURIComponent(filename)}`);
 }

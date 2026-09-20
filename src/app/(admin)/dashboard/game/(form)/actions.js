@@ -107,6 +107,14 @@ const MAX_THUMBNAIL_BYTES = parsePositiveIntEnv("NEXT_MAX_THUMBNAIL_BYTES", 10 *
 const MAX_ROM_BYTES = parsePositiveIntEnv("NEXT_MAX_ROM_BYTES", 256 * 1024 * 1024); // 256MB
 
 const ALLOWED_THUMBNAIL_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"]);
+const THUMBNAIL_CONTENT_TYPES = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+  ".avif": "image/avif",
+};
 // Broad but explicit allowlist; expand as needed for your EmulatorJS cores.
 const ALLOWED_ROM_EXTENSIONS = new Set([
   ".zip",
@@ -511,7 +519,7 @@ async function uploadGame(gameFile) {
   const objectKey = `rom/${filename}`;
 
   const buffer = Buffer.from(await gameFile.arrayBuffer());
-  await uploadGcsObject(objectKey, buffer, gameFile.type);
+  await uploadGcsObject(objectKey, buffer, gameFile.type || "application/octet-stream");
   return { filename, objectKey };
 }
 
@@ -524,9 +532,11 @@ async function uploadThumbnail(thumbnailFile) {
 
   const filename = generateUniqueFilename(thumbnailFile.name, ALLOWED_THUMBNAIL_EXTENSIONS);
   const objectKey = `thumbnail/${filename}`;
+  const extension = getLowerExtension(filename);
+  const contentType = THUMBNAIL_CONTENT_TYPES[extension];
 
   const buffer = Buffer.from(await thumbnailFile.arrayBuffer());
-  await uploadGcsObject(objectKey, buffer, thumbnailFile.type);
+  await uploadGcsObject(objectKey, buffer, contentType);
   return { filename, objectKey };
 }
 
