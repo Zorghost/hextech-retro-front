@@ -5,8 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { getGameThumbnailUrl } from "@/lib/assetUrls";
 
-const fallbackThumbnail = "/game/placeholder.jpg";
-const maxThumbnailRetries = 5;
 
 export default function GameCard({
   game,
@@ -16,9 +14,7 @@ export default function GameCard({
   showCategoryTitle = true,
   className = "",
 }) {
-  const initialThumbnail = getGameThumbnailUrl(game.image);
-  const [thumbnailSrc, setThumbnailSrc] = useState(initialThumbnail);
-  const [thumbnailRetry, setThumbnailRetry] = useState(0);
+  const Thumbnail = getGameThumbnailUrl(game.image);
 
   if (!game) {
     return null;
@@ -26,19 +22,6 @@ export default function GameCard({
 
   const gameHref = href ?? `/game/${game.slug}`;
 
-  const handleThumbnailError = () => {
-    if (thumbnailRetry < maxThumbnailRetries) {
-      const nextRetry = thumbnailRetry + 1;
-      const retryUrl = new URL(getGameThumbnailUrl(game.image), window.location.origin);
-      retryUrl.searchParams.set("retry", String(nextRetry));
-      retryUrl.searchParams.set("ts", String(Date.now()));
-      setThumbnailRetry(nextRetry);
-      setThumbnailSrc(retryUrl.toString());
-      return;
-    }
-
-    setThumbnailSrc(fallbackThumbnail);
-  };
 
   return (
     <Link
@@ -51,14 +34,13 @@ export default function GameCard({
           : "relative mb-2 aspect-square w-full overflow-hidden rounded-lg border border-accent-secondary bg-main"}
       >
         <Image
-          src={thumbnailSrc}
+          src={Thumbnail}
           alt={game.title}
           fill
           sizes={compact ? "64px" : "(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 180px"}
           unoptimized
           quality={50}
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          onError={handleThumbnailError}
         />
       </div>
 
