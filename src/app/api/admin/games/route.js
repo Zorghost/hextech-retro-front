@@ -33,7 +33,7 @@ export async function POST(request) {
       },
       {
         status: 429,
-        headers: getRateLimitHeaders(rateLimitResult, 5),
+        headers: getRateLimitHeaders(rateLimitResult, 5, true),
       }
     );
   }

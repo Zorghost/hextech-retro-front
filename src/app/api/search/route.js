@@ -13,7 +13,7 @@ export async function GET(request) {
       { error: "Too many search requests. Please try again later." },
       {
         status: 429,
-        headers: getRateLimitHeaders(rateLimitResult, 30),
+        headers: getRateLimitHeaders(rateLimitResult, 30, true),
       }
     );
   }

@@ -134,21 +134,6 @@ export async function POST(request) {
     return Response.json({ status: "error", message: "Unauthorized" }, { status: 401 });
   }
 
-  // Rate limiting: 3 ROM uploads per minute per admin (critical S3 abuse prevention)
-  const clientIp = getClientIp(request);
-  const rateLimitKey = `admin:uploads:${session.user.id || clientIp}`;
-  const rateLimitResult = await checkRateLimit(rateLimitKey, 3, 60000);
-
-  if (!rateLimitResult.success) {
-    return Response.json(
-      { status: "error", message: "Too many upload requests. Please try again later." },
-      {
-        status: 429,
-        headers: getRateLimitHeaders(rateLimitResult, 3),
-      }
-    );
-  }
-
   try {
     getGcsBucket();
 
@@ -221,6 +206,21 @@ export async function POST(request) {
     const action = body?.action;
 
     if (action === "init") {
+      // Limit new uploads, not individual chunks within an authenticated upload.
+      const clientIp = getClientIp(request);
+      const rateLimitKey = `admin:uploads:${session.user.id || clientIp}`;
+      const rateLimitResult = await checkRateLimit(rateLimitKey, 3, 60000);
+
+      if (!rateLimitResult.success) {
+        return Response.json(
+          { status: "error", message: "Too many uploads. Please try again later." },
+          {
+            status: 429,
+            headers: getRateLimitHeaders(rateLimitResult, 3, true),
+          }
+        );
+      }
+
       const originalName = String(body?.filename || "");
       const totalSize = Number(body?.totalSize);
 
