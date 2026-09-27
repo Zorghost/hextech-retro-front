@@ -9,19 +9,62 @@ import { useMemo, useState } from "react";
 const initialState = { message: null }
 const CHUNK_THRESHOLD_BYTES = 100 * 1024 * 1024;
 const CHUNK_SIZE_BYTES = 8 * 1024 * 1024;
+const MAX_TRANSIENT_RETRIES = 3;
+const RETRY_BASE_DELAY_MS = 1000;
+const RETRY_MAX_DELAY_MS = 15000;
 
-function postJson(url, payload) {
-  return fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(payload),
-  }).then(async (response) => {
+function getRetryDelayMs(response, retryAttempt) {
+  const retryAfter = response.headers.get("retry-after");
+
+  if (retryAfter) {
+    const retryAfterSeconds = Number.parseInt(retryAfter, 10);
+    if (Number.isFinite(retryAfterSeconds)) {
+      return Math.max(0, retryAfterSeconds * 1000);
+    }
+
+    const retryAfterDate = Date.parse(retryAfter);
+    if (Number.isFinite(retryAfterDate)) {
+      return Math.max(0, retryAfterDate - Date.now());
+    }
+  }
+
+  const rateLimitReset = Number.parseInt(response.headers.get("x-ratelimit-reset") || "", 10);
+  if (Number.isFinite(rateLimitReset)) {
+    return Math.max(0, rateLimitReset * 1000 - Date.now());
+  }
+
+  const exponentialDelay = Math.min(RETRY_MAX_DELAY_MS, RETRY_BASE_DELAY_MS * (2 ** retryAttempt));
+  const jitter = Math.floor(Math.random() * Math.max(1, exponentialDelay * 0.25));
+  return exponentialDelay + jitter;
+}
+
+function waitForRetry(delayMs) {
+  return new Promise((resolve) => window.setTimeout(resolve, delayMs));
+}
+
+function isRetryableStatus(status) {
+  return status === 429 || status === 503;
+}
+
+async function postJson(url, payload) {
+  for (let retryAttempt = 0; retryAttempt <= MAX_TRANSIENT_RETRIES; retryAttempt += 1) {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) {
+    if (response.ok) {
+      return body;
+    }
+
+    if (!isRetryableStatus(response.status) || retryAttempt === MAX_TRANSIENT_RETRIES) {
       throw new Error(typeof body?.message === "string" ? body.message : "Request failed.");
     }
-    return body;
-  });
+
+    await waitForRetry(getRetryDelayMs(response, retryAttempt));
+  }
 }
 
 function uploadFormDataWithProgress(url, formData, onProgress) {
@@ -70,41 +113,57 @@ function uploadFormDataWithProgress(url, formData, onProgress) {
 
 function uploadChunkPart({ key, uploadId, partNumber, chunk, start, end, totalSize, onProgress }) {
   return new Promise((resolve, reject) => {
-    const formData = new FormData();
-    formData.set("action", "uploadPart");
-    formData.set("key", key);
-    formData.set("uploadId", uploadId);
-    formData.set("partNumber", String(partNumber));
-    formData.set("start", String(start));
-    formData.set("end", String(end));
-    formData.set("totalSize", String(totalSize));
-    formData.set("chunk", chunk, `part-${partNumber}`);
+    const sendAttempt = (retryAttempt) => {
+      const formData = new FormData();
+      formData.set("action", "uploadPart");
+      formData.set("key", key);
+      formData.set("uploadId", uploadId);
+      formData.set("partNumber", String(partNumber));
+      formData.set("start", String(start));
+      formData.set("end", String(end));
+      formData.set("totalSize", String(totalSize));
+      formData.set("chunk", chunk, `part-${partNumber}`);
 
-    const request = new XMLHttpRequest();
-    request.open("POST", "/api/admin/uploads/game-multipart");
-    request.responseType = "json";
+      const request = new XMLHttpRequest();
+      request.open("POST", "/api/admin/uploads/game-multipart");
+      request.responseType = "json";
 
-    request.upload.onprogress = (event) => {
-      if (event.lengthComputable) {
-        onProgress(event.loaded);
-      }
+      request.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          onProgress(event.loaded);
+        }
+      };
+
+      request.onload = () => {
+        const response = request.response && typeof request.response === "object" ? request.response : null;
+        if (request.status >= 200 && request.status < 300 && response?.eTag) {
+          resolve(response.eTag);
+          return;
+        }
+
+        if (isRetryableStatus(request.status) && retryAttempt < MAX_TRANSIENT_RETRIES) {
+          const retryResponse = new Response(null, {
+            status: request.status,
+            headers: {
+              "retry-after": request.getResponseHeader("retry-after") || "",
+              "x-ratelimit-reset": request.getResponseHeader("x-ratelimit-reset") || "",
+            },
+          });
+          waitForRetry(getRetryDelayMs(retryResponse, retryAttempt)).then(() => sendAttempt(retryAttempt + 1));
+          return;
+        }
+
+        reject(new Error(typeof response?.message === "string" ? response.message : "Chunk upload failed."));
+      };
+
+      request.onerror = () => {
+        reject(new Error("Network error while uploading chunk."));
+      };
+
+      request.send(formData);
     };
 
-    request.onload = () => {
-      const response = request.response && typeof request.response === "object" ? request.response : null;
-      if (request.status >= 200 && request.status < 300 && response?.eTag) {
-        resolve(response.eTag);
-        return;
-      }
-
-      reject(new Error(typeof response?.message === "string" ? response.message : "Chunk upload failed."));
-    };
-
-    request.onerror = () => {
-      reject(new Error("Network error while uploading chunk."));
-    };
-
-    request.send(formData);
+    sendAttempt(0);
   });
 }
 
