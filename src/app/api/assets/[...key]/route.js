@@ -1,4 +1,4 @@
-import { getGcsImage, getGcsObject } from "@/lib/gcsStorage";
+import { getGcsImage, getGcsSignedReadUrl } from "@/lib/gcsStorage";
 import { Readable } from "node:stream";
 
 export const runtime = "nodejs";
@@ -26,9 +26,12 @@ export async function GET(_request, { params }) {
 
     const objectKey = keyParts.join("/");
 
-    const result = topLevel === "rom"
-      ? await getGcsObject(objectKey)
-      : await getGcsImage(objectKey);
+    if (topLevel === "rom") {
+      const signedUrl = await getGcsSignedReadUrl(objectKey);
+      return Response.redirect(signedUrl, 307);
+    }
+
+    const result = await getGcsImage(objectKey);
 
     const headers = new Headers();
     if (result.contentType) headers.set("Content-Type", result.contentType);

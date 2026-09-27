@@ -90,6 +90,25 @@ export async function getGcsObject(key) {
   };
 }
 
+export async function getGcsSignedReadUrl(key, expiresInMs = 5 * 60 * 1000) {
+  const file = getGcsBucket().file(key);
+  await withTimeout(
+    file.getMetadata({ timeout: GCS_READ_TIMEOUT_MS }),
+    "metadata lookup",
+  );
+
+  const [url] = await withTimeout(
+    file.getSignedUrl({
+      version: "v4",
+      action: "read",
+      expires: Date.now() + expiresInMs,
+    }),
+    "signed URL generation",
+  );
+
+  return url;
+}
+
 export async function getGcsImage(key) {
   const file = getGcsBucket().file(key);
   let lastError;
