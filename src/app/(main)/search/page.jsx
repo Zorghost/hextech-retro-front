@@ -8,7 +8,6 @@ import { buildBreadcrumbJsonLd, buildMetaDescription, safeJsonLdStringify } from
 import GameCard from "@/components/ui/GameCard";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 3600; // 1 hour
 
 export async function generateMetadata({ searchParams }) {
   const siteUrl = getSiteUrl();

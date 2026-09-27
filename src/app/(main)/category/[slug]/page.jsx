@@ -11,7 +11,8 @@ import { notFound } from "next/navigation";
 import Script from "next/script";
 import { buildBreadcrumbJsonLd, buildMetaDescription, safeJsonLdStringify } from "@/features/game/seo";
 
-export const revalidate = 3600; // 1 hour
+export const dynamic = "force-dynamic";
+
 
 const isProxyImageSource = (process.env.NEXT_PUBLIC_IMAGE_SOURCE ?? "").toLowerCase() === "proxy";
 
