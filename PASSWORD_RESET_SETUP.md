@@ -20,8 +20,7 @@ npm install
 # or
 yarn install
 ```
-et
-This installs the upgraded NextAuth (v5.0.0 stable) and nodemailer.
+This installs the upgraded Auth.js v5 beta and compatible Nodemailer release.
 
 ### 2. Database Migration
 

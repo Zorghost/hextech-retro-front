@@ -12,6 +12,12 @@ import { checkRateLimit, getClientIp, getRateLimitHeaders } from "@/lib/ratelimi
 
 export const runtime = "nodejs";
 
+const MAX_ROM_BYTES = Number.parseInt(process.env.NEXT_MAX_ROM_BYTES || "", 10) > 0
+  ? Number.parseInt(process.env.NEXT_MAX_ROM_BYTES, 10)
+  : 256 * 1024 * 1024;
+const UPLOAD_SESSION_TTL_MS = 30 * 60 * 1000;
+const uploadSessions = new Map();
+
 const ALLOWED_ROM_EXTENSIONS = new Set([
   ".zip",
   ".7z",
@@ -81,10 +87,50 @@ function ensureRomKey(key) {
   return filename;
 }
 
+function getUploadOwnerId(session) {
+  return String(session?.user?.id || session?.user?.email || "");
+}
+
+function cleanupUploadSessions() {
+  const now = Date.now();
+
+  for (const [uploadId, uploadSession] of uploadSessions.entries()) {
+    if (uploadSession.expiresAt <= now) {
+      uploadSessions.delete(uploadId);
+    }
+  }
+}
+
+function validateUploadSession({ uploadId, key, ownerId, totalSize }) {
+  cleanupUploadSessions();
+
+  const uploadSession = uploadSessions.get(uploadId);
+
+  if (!uploadSession) {
+    return { status: 400, message: "Upload session is invalid or expired." };
+  }
+
+  if (uploadSession.ownerId !== ownerId || uploadSession.key !== key) {
+    return { status: 403, message: "Upload session does not belong to this administrator." };
+  }
+
+  if (totalSize !== undefined && uploadSession.totalSize !== totalSize) {
+    return { status: 400, message: "Upload size does not match the initialized session." };
+  }
+
+  return { session: uploadSession };
+}
+
 export async function POST(request) {
   const session = await auth();
 
   if (!isAdminSession(session)) {
+    return Response.json({ status: "error", message: "Unauthorized" }, { status: 401 });
+  }
+
+  const ownerId = getUploadOwnerId(session);
+
+  if (!ownerId) {
     return Response.json({ status: "error", message: "Unauthorized" }, { status: 401 });
   }
 
@@ -98,7 +144,7 @@ export async function POST(request) {
       { status: "error", message: "Too many upload requests. Please try again later." },
       {
         status: 429,
-        headers: getRateLimitHeaders(rateLimitResult),
+        headers: getRateLimitHeaders(rateLimitResult, 3),
       }
     );
   }
@@ -129,6 +175,20 @@ export async function POST(request) {
 
       if (!isNonEmptyString(uploadId)) {
         return Response.json({ status: "error", message: "Upload ID is required." }, { status: 400 });
+      }
+
+      const sessionValidation = validateUploadSession({
+        uploadId,
+        key,
+        ownerId,
+        totalSize,
+      });
+
+      if (!sessionValidation.session) {
+        return Response.json(
+          { status: "error", message: sessionValidation.message },
+          { status: sessionValidation.status },
+        );
       }
 
       if (!Number.isInteger(partNumber) || partNumber < 1) {
@@ -162,6 +222,15 @@ export async function POST(request) {
 
     if (action === "init") {
       const originalName = String(body?.filename || "");
+      const totalSize = Number(body?.totalSize);
+
+      if (!Number.isInteger(totalSize) || totalSize <= 0 || totalSize > MAX_ROM_BYTES) {
+        return Response.json(
+          { status: "error", message: `ROM file must be between 1 byte and ${MAX_ROM_BYTES} bytes.` },
+          { status: 400 },
+        );
+      }
+
       const ext = validateRomFilename(originalName);
       const filename = `${randomUUID()}${ext}`;
       const key = `rom/${filename}`;
@@ -170,6 +239,13 @@ export async function POST(request) {
         key,
         isNonEmptyString(body?.contentType) ? String(body.contentType) : undefined,
       );
+
+      uploadSessions.set(uploadId, {
+        ownerId,
+        key,
+        totalSize,
+        expiresAt: Date.now() + UPLOAD_SESSION_TTL_MS,
+      });
 
       return Response.json({
         status: "success",
@@ -188,7 +264,17 @@ export async function POST(request) {
         return Response.json({ status: "error", message: "Upload ID is required." }, { status: 400 });
       }
 
+      const sessionValidation = validateUploadSession({ uploadId, key, ownerId });
+
+      if (!sessionValidation.session) {
+        return Response.json(
+          { status: "error", message: sessionValidation.message },
+          { status: sessionValidation.status },
+        );
+      }
+
       const filename = ensureRomKey(key);
+      uploadSessions.delete(uploadId);
       return Response.json({
         status: "success",
         key,
@@ -206,7 +292,17 @@ export async function POST(request) {
         return Response.json({ status: "error", message: "Upload ID is required." }, { status: 400 });
       }
 
+      const sessionValidation = validateUploadSession({ uploadId, key, ownerId });
+
+      if (!sessionValidation.session) {
+        return Response.json(
+          { status: "error", message: sessionValidation.message },
+          { status: sessionValidation.status },
+        );
+      }
+
       await abortGcsResumableUpload(uploadId);
+      uploadSessions.delete(uploadId);
 
       return Response.json({ status: "success" });
     }

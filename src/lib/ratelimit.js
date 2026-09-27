@@ -53,9 +53,9 @@ export async function checkRateLimit(identifier, maxRequests = 10, windowMs = 60
 /**
  * Get rate limit headers for response
  */
-export function getRateLimitHeaders(result) {
+export function getRateLimitHeaders(result, maxRequests) {
   return {
-    "X-RateLimit-Limit": "10",
+    "X-RateLimit-Limit": String(maxRequests),
     "X-RateLimit-Remaining": result.remaining.toString(),
     "X-RateLimit-Reset": Math.ceil(result.resetTime / 1000).toString(),
   };

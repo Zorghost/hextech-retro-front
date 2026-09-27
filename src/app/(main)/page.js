@@ -13,7 +13,6 @@ import {
   getRandomPublishedGames,
 } from "@/features/game/queries";
 
-export const dynamic = "force-dynamic";
 export const revalidate = 3600; // 1 hour
 
 function dedupeRail(section, excludedIds) {

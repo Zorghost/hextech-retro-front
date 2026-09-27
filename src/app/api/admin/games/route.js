@@ -33,7 +33,7 @@ export async function POST(request) {
       },
       {
         status: 429,
-        headers: getRateLimitHeaders(rateLimitResult),
+        headers: getRateLimitHeaders(rateLimitResult, 5),
       }
     );
   }
@@ -44,6 +44,6 @@ export async function POST(request) {
   const statusCode = result?.status === "success" ? 200 : 400;
   return Response.json(result, {
     status: statusCode,
-    headers: getRateLimitHeaders(rateLimitResult),
+    headers: getRateLimitHeaders(rateLimitResult, 5),
   });
 }

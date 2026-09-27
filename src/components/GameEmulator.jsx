@@ -46,6 +46,7 @@ export default function GameEmulator({ game, romUrl }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [isLegacyBrowser, setIsLegacyBrowser] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const timeoutRef = useRef(null);
   const scriptRef = useRef(null);
   const statusRef = useRef("idle");
@@ -152,50 +153,14 @@ export default function GameEmulator({ game, romUrl }) {
         scriptRef.current = null;
       }
     };
-  }, [core, romUrl]);
+  }, [core, romUrl, retryKey]);
 
   const handleRetry = () => {
     setStatus("idle");
     statusRef.current = "idle";
     setErrorMessage("");
     clearTimeoutRef();
-
-    if (romUrl) {
-      const script = document.createElement("script");
-      script.src = EMULATOR_SCRIPT_SRC;
-      script.async = true;
-      script.onload = () => {
-        const gameElement = document.getElementById("game");
-        if (gameElement) {
-          gameElement.innerHTML = "";
-        }
-        setStatus("loading");
-        statusRef.current = "loading";
-        window.EJS_player = "#game";
-        window.EJS_gameUrl = romUrl;
-        window.EJS_core = core ? String(core) : "";
-        window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
-
-        timeoutRef.current = window.setTimeout(() => {
-          if (statusRef.current === "loading") {
-            setStatus("error");
-            statusRef.current = "error";
-            setErrorMessage("The emulator took too long to start this ROM. Please retry or try another browser.");
-          }
-        }, EMULATOR_TIMEOUT_MS);
-      };
-      script.onerror = () => {
-        setStatus("error");
-        statusRef.current = "error";
-        setErrorMessage("The emulator script failed to load. This is usually caused by a temporary network issue or an unsupported ROM format.");
-      };
-
-      if (scriptRef.current) {
-        scriptRef.current.remove();
-      }
-      scriptRef.current = script;
-      document.body.appendChild(script);
-    }
+    setRetryKey((currentKey) => currentKey + 1);
   };
 
   const showWarning = isMobile || isLegacyBrowser;

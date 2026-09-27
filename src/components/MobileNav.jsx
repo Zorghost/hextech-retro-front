@@ -96,6 +96,7 @@ export default function MobileNav() {
       return undefined;
     }
 
+    const toggleButtonElement = toggleButtonRef.current;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -147,7 +148,7 @@ export default function MobileNav() {
     return () => {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", handleKeyDown);
-      toggleButtonRef.current?.focus();
+      toggleButtonElement?.focus();
     };
   }, [isOpen]);
 

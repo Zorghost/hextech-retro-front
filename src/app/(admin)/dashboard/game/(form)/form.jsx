@@ -113,6 +113,7 @@ async function uploadLargeGameInChunks(file, setUploadProgress) {
     action: "init",
     filename: file.name,
     contentType: file.type,
+    totalSize: file.size,
   });
 
   const uploadId = init?.uploadId;
