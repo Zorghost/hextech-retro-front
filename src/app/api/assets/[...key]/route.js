@@ -49,6 +49,16 @@ export async function GET(_request, { params }) {
     // - Invalid credentials or permissions => 502
     // - Any other upstream error => 502
     const message = (error?.name || "").toString();
+    if (error?.code === "GCS_READ_TIMEOUT") {
+      return new Response("Asset retrieval timed out", {
+        status: 504,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          "Retry-After": "5",
+        },
+      });
+    }
+
     if (message === "NoSuchKey" || message === "NotFound" || error?.code === 404) {
       return new Response("Not found", {
         status: 404,

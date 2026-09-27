@@ -1,6 +1,28 @@
 import { Storage } from "@google-cloud/storage";
 
 let storage;
+const GCS_READ_TIMEOUT_MS = 5000;
+
+function createTimeoutError(operation) {
+  const error = new Error(`GCS ${operation} timed out.`);
+  error.code = "GCS_READ_TIMEOUT";
+  return error;
+}
+
+async function withTimeout(promise, operation, timeoutMs = GCS_READ_TIMEOUT_MS) {
+  let timeoutId;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(createTimeoutError(operation)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 function getServiceAccountCredentials() {
   const raw = process.env.GCS_SERVICE_ACCOUNT_JSON;
@@ -57,9 +79,12 @@ export async function deleteGcsObject(key) {
 
 export async function getGcsObject(key) {
   const file = getGcsBucket().file(key);
-  const [metadata] = await file.getMetadata();
+  const [metadata] = await withTimeout(
+    file.getMetadata({ timeout: GCS_READ_TIMEOUT_MS }),
+    "metadata lookup",
+  );
   return {
-    body: file.createReadStream(),
+    body: file.createReadStream({ timeout: GCS_READ_TIMEOUT_MS }),
     contentType: metadata.contentType,
     contentLength: metadata.size,
   };
@@ -71,10 +96,10 @@ export async function getGcsImage(key) {
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const [metadata, body] = await Promise.all([
-        file.getMetadata(),
-        file.download(),
-      ]);
+      const [metadata, body] = await withTimeout(Promise.all([
+        file.getMetadata({ timeout: GCS_READ_TIMEOUT_MS }),
+        file.download({ timeout: GCS_READ_TIMEOUT_MS }),
+      ]), "image retrieval");
 
       return {
         body: body[0],
@@ -82,6 +107,9 @@ export async function getGcsImage(key) {
         contentLength: metadata[0].size,
       };
     } catch (error) {
+      if (error?.code === "GCS_READ_TIMEOUT") {
+        throw error;
+      }
       lastError = error;
     }
   }
